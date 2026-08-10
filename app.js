@@ -60,14 +60,21 @@ document.addEventListener('DOMContentLoaded', () => {
     // Get unique staff IDs that exist in jadwal to only show teachers who have schedules
     const guruWithJadwal = [...new Set(jadwals.map(j => j.ID_Staff))];
     
-    guruWithJadwal.forEach(idStaff => {
-      // Find name from staffList or use ID if not found
+    // Map to objects so we can sort alphabetically
+    const guruData = guruWithJadwal.map(idStaff => {
       const st = (staffList || []).find(s => s.ID_Staff === idStaff);
       const nama = st ? st.Nama_Lengkap : (jadwals.find(j => j.ID_Staff === idStaff).Nama_Guru || idStaff);
-      
+      return { idStaff, nama };
+    });
+
+    // Sort alphabetically by name
+    guruData.sort((a, b) => a.nama.localeCompare(b.nama));
+
+    // Append sorted options to select
+    guruData.forEach(item => {
       const opt = document.createElement('option');
-      opt.value = idStaff;
-      opt.innerText = nama;
+      opt.value = item.idStaff;
+      opt.innerText = item.nama;
       selGuru.appendChild(opt);
     });
   }
