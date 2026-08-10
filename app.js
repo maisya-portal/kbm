@@ -32,6 +32,9 @@ document.addEventListener('DOMContentLoaded', () => {
   let allSantri = [];
   let progressInterval = null;
   let jamMasukTime = null;
+  
+  // State for clock out context
+  let activeClockIn = null;
 
   // Init Data from Server
   async function initData() {
@@ -545,6 +548,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if(!navigator.onLine) {
       showLoading(false);
       Swal.fire('Tersimpan Offline', 'Jam Masuk disimpan lokal.', 'info');
+      
+      activeClockIn = {
+        id_guru: payload.id_guru,
+        nama_guru: payload.nama_guru
+      };
       onClockInSuccess();
     } else {
       try {
@@ -557,6 +565,11 @@ document.addEventListener('DOMContentLoaded', () => {
         showLoading(false);
         if(res.success) {
           Swal.fire('Berhasil', 'Jam Masuk berhasil dicatat.', 'success');
+          
+          activeClockIn = {
+            id_guru: payload.id_guru,
+            nama_guru: payload.nama_guru
+          };
           onClockInSuccess();
         } else {
           Swal.fire('Gagal', res.message || 'Terjadi kesalahan.', 'error');
@@ -634,8 +647,15 @@ document.addEventListener('DOMContentLoaded', () => {
         sisaWaktuText.innerText = "Belum Mulai";
         progressMengajar.style.width = "0%";
       } else {
-        const remainingMinutes = Math.ceil(remaining / 1000 / 60);
-        sisaWaktuText.innerText = `${remainingMinutes} menit lagi`;
+        const remainingSeconds = Math.floor(remaining / 1000);
+        const rm = Math.floor(remainingSeconds / 60);
+        const rs = remainingSeconds % 60;
+        
+        let timeStr = "";
+        if(rm > 0) timeStr += `${rm} menit `;
+        timeStr += `${rs} detik lagi`;
+        
+        sisaWaktuText.innerText = timeStr;
         const percentage = (elapsed / totalDuration) * 100;
         progressMengajar.style.width = `${Math.min(100, Math.max(0, percentage))}%`;
         progressMengajar.classList.add('bg-success');
@@ -644,18 +664,21 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     
     updateProgress();
-    progressInterval = setInterval(updateProgress, 60000);
+    progressInterval = setInterval(updateProgress, 1000);
   }
 
   async function doClockOut() {
     showLoading(true);
-    const namaGuru = selGuru.options[selGuru.selectedIndex] ? selGuru.options[selGuru.selectedIndex].text : selGuru.value;
-    const selectedJadwalId = selJam.options[selJam.selectedIndex] ? selJam.options[selJam.selectedIndex].getAttribute('data-id') : "";
+    
+    // Fallback if not stored in activeClockIn (e.g. page wasn't refreshed but state lost somehow)
+    const fallbackNama = selGuru.options[selGuru.selectedIndex] ? selGuru.options[selGuru.selectedIndex].text : selGuru.value;
+    const fallbackJadwal = selJam.options[selJam.selectedIndex] ? selJam.options[selJam.selectedIndex].getAttribute('data-id') : "";
+    
     const payload = {
       action: 'clock_out',
-      id_guru: selGuru.value,
-      nama_guru: namaGuru,
-      id_jadwal: selectedJadwalId || "",
+      id_guru: activeClockIn ? activeClockIn.id_guru : selGuru.value,
+      nama_guru: activeClockIn ? activeClockIn.nama_guru : fallbackNama,
+      id_jadwal: (activeClockIn && activeClockIn.id_jadwal) ? activeClockIn.id_jadwal : fallbackJadwal,
       timestamp: new Date().toISOString()
     };
     
@@ -665,7 +688,8 @@ document.addEventListener('DOMContentLoaded', () => {
       if(btnJamKeluar) btnJamKeluar.classList.add('d-none');
     } else {
       try {
-        const response = await fetch(GAS_URL.replace("get_jadwal_kbm", "clock_out"), {
+        const fetchUrl = GAS_URL.replace("get_jadwal_kbm", "clock_out");
+        const response = await fetch(fetchUrl, {
           method: 'POST',
           body: JSON.stringify(payload)
         });
@@ -675,6 +699,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if(res.success) {
           Swal.fire('Berhasil', 'Jam Keluar berhasil dicatat.', 'success');
           if(btnJamKeluar) btnJamKeluar.classList.add('d-none');
+          
+          // Matikan progress bar
+          const statusMengajar = document.getElementById('status-mengajar');
+          if(statusMengajar) statusMengajar.classList.add('d-none');
+          if(progressInterval) clearInterval(progressInterval);
+          jamMasukTime = null;
+          
         } else {
           Swal.fire('Gagal', res.message || 'Terjadi kesalahan.', 'error');
         }
