@@ -1,0 +1,21 @@
+{
+  "name": "Presensi KBM Interaktif",
+  "short_name": "KBM Presensi",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#87CEEB",
+  "theme_color": "#87CEEB",
+  "description": "Aplikasi Pencatatan Kehadiran & Jurnal Mengajar",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/1043/1043304.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/1043/1043304.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

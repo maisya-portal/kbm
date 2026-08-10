@@ -1,0 +1,194 @@
+:root {
+  --primary-color: #4f46e5;
+  --primary-hover: #4338ca;
+  --accent-color: #10b981;
+  --bg-color: #f8fafc;
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  --danger-color: #ef4444;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-main);
+  overflow-x: hidden;
+}
+
+/* Header */
+.app-header {
+  background: white;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+.logo-wrapper {
+  width: 45px;
+  height: 45px;
+  border-radius: 12px;
+  background: #eff6ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.status-indicator {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  transition: all 0.3s ease;
+}
+.status-indicator.online {
+  background: #dcfce7;
+  color: #16a34a;
+}
+.status-indicator.offline {
+  background: #fee2e2;
+  color: #dc2626;
+  animation: pulse-red 2s infinite;
+}
+
+@keyframes pulse-red {
+  0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(220, 38, 38, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
+}
+
+/* Animations */
+.animate-fade-in {
+  animation: fadeIn 0.5s ease forwards;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-shake {
+  animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+}
+@keyframes shake {
+  10%, 90% { transform: translate3d(-1px, 0, 0); }
+  20%, 80% { transform: translate3d(2px, 0, 0); }
+  30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+  40%, 60% { transform: translate3d(4px, 0, 0); }
+}
+
+/* Loading Pill Global */
+.global-loading {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2000;
+  transition: all 0.3s ease;
+}
+.loading-pill {
+  background: white;
+  padding: 10px 24px;
+  border-radius: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary-color);
+}
+
+/* Custom Table for Attendance */
+.table-scroll-container {
+  max-height: 400px;
+  overflow-y: auto;
+}
+/* Ensure header stays on top when scrolling */
+.table-scroll-container thead th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background-color: #f8fafc;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+.custom-table th {
+  border-bottom: 2px solid #e2e8f0;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.5px;
+}
+.custom-table td {
+  border-bottom: 1px solid #f1f5f9;
+}
+
+/* Radio Button Group (Pill style for attendance) */
+.attendance-radios {
+  display: flex;
+  gap: 5px;
+  justify-content: center;
+}
+.attendance-radios input[type="radio"] {
+  display: none;
+}
+.attendance-radios label {
+  cursor: pointer;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border: 1px solid #e2e8f0;
+  color: var(--text-muted);
+  transition: all 0.2s ease;
+  user-select: none;
+}
+.attendance-radios input[type="radio"]:checked + label {
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+  border-color: transparent;
+  color: white;
+}
+.attendance-radios input[value="Hadir"]:checked + label { background-color: var(--accent-color); }
+.attendance-radios input[value="Sakit"]:checked + label { background-color: #f59e0b; }
+.attendance-radios input[value="Izin"]:checked + label { background-color: #3b82f6; }
+.attendance-radios input[value="Alfa"]:checked + label { background-color: var(--danger-color); }
+
+/* PIN Pad */
+.pin-pad button {
+  width: 100%;
+  aspect-ratio: 1/1;
+  border-radius: 50%;
+  border: none;
+  background: #f1f5f9;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-main);
+  transition: background 0.1s;
+}
+.pin-pad button:active {
+  background: #e2e8f0;
+}
+.tracking-widest {
+  letter-spacing: 0.5em;
+}
+
+/* Sticky Action Bar */
+.sticky-action-bar {
+  position: sticky;
+  bottom: 20px;
+  z-index: 99;
+}
+
+/* Custom Tabs */
+.custom-tabs {
+  background: white;
+  padding: 8px;
+  border-radius: 50px;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+  display: inline-flex;
+}
+.custom-tabs .nav-link {
+  color: var(--text-muted);
+  transition: all 0.3s ease;
+}
+.custom-tabs .nav-link.active {
+  background-color: var(--primary-color);
+  color: white;
+  box-shadow: 0 4px 10px rgba(79, 70, 229, 0.3);
+}

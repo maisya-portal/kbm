@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Presensi KBM Interaktif</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  
+  <!-- CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#87CEEB">
+</head>
+<body class="bg-light-subtle">
+
+  <!-- Floating Non-Blocking Loading Indicator -->
+  <div id="global-loading" class="global-loading d-none">
+    <div class="loading-pill shadow">
+      <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+      <span class="ms-2 fw-medium">Memuat...</span>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <header class="app-header shadow-sm">
+    <div class="container py-3 d-flex justify-content-between align-items-center">
+      <div class="d-flex align-items-center gap-3">
+        <div class="logo-wrapper">
+          <i class="bi bi-journal-check text-primary fs-4"></i>
+        </div>
+        <div>
+          <h1 class="h5 mb-0 fw-bold">Presensi KBM</h1>
+          <p class="mb-0 text-muted small">Pencatatan Kehadiran & Jurnal Mengajar</p>
+        </div>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <button id="btn-fullscreen" class="btn btn-light rounded-circle shadow-sm" style="width: 40px; height: 40px;" title="Fullscreen">
+          <i class="bi bi-arrows-fullscreen text-secondary"></i>
+        </button>
+        <div id="online-status" class="status-indicator online shadow-sm" title="Status Koneksi: Online">
+          <i class="bi bi-wifi"></i>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container py-4 mb-5 pb-5">
+    
+    <!-- Bagian 1: Filter & Konteks KBM -->
+    <section class="card border-0 shadow-sm rounded-4 mb-4 filter-section">
+      <div class="card-body p-4">
+        <h5 class="card-title fw-bold mb-4"><i class="bi bi-funnel me-2 text-primary"></i>Konfigurasi KBM</h5>
+        
+        <div class="row g-3">
+          <div class="col-md-6 col-lg-3">
+            <label class="form-label fw-medium text-muted small">Pilih Guru</label>
+            <select class="form-select form-select-lg shadow-none" id="select-guru">
+              <option value="" selected disabled>-- Nama Guru --</option>
+              <option value="ID_G01">Ustadz Ahmad</option>
+              <option value="ID_G02">Ustadz Budi</option>
+              <!-- Mock Data -->
+            </select>
+          </div>
+          <div class="col-md-6 col-lg-3">
+            <label class="form-label fw-medium text-muted small">Mata Pelajaran</label>
+            <select class="form-select form-select-lg shadow-none" id="select-mapel" disabled>
+              <option value="" selected disabled>-- Mata Pelajaran --</option>
+              <option value="M01">Aqidah Akhlak</option>
+              <option value="M02">Fikih</option>
+              <option value="M03">Bahasa Arab</option>
+            </select>
+          </div>
+          <div class="col-md-6 col-lg-3">
+            <label class="form-label fw-medium text-muted small">Kelas</label>
+            <select class="form-select form-select-lg shadow-none" id="select-kelas" disabled>
+              <option value="" selected disabled>-- Kelas --</option>
+              <option value="K01">VII A</option>
+              <option value="K02">VII B</option>
+              <option value="K03">VIII A</option>
+            </select>
+          </div>
+          <div class="col-md-6 col-lg-3">
+            <label class="form-label fw-medium text-muted small">Jam Pelajaran</label>
+            <select class="form-select form-select-lg shadow-none" id="select-jam" disabled>
+              <option value="" selected disabled>-- Jam Ke --</option>
+              <option value="1-2">Jam 1 & 2</option>
+              <option value="3-4">Jam 3 & 4</option>
+              <option value="5-6">Jam 5 & 6</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="mt-4 text-end">
+          <button id="btn-load-data" class="btn btn-primary px-4 py-2 fw-semibold rounded-pill" disabled>
+            <i class="bi bi-arrow-right-circle me-2"></i>Mulai Input
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Area Konten (Disembunyikan sebelum filter dipilih) -->
+    <div id="content-area" class="d-none animate-fade-in">
+      
+      <!-- Bagian 2: Materi Pokok -->
+      <section class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-body p-4">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="card-title fw-bold mb-0"><i class="bi bi-journal-text me-2 text-warning"></i>Jurnal Mengajar</h5>
+            <div id="waktu-mengajar" class="text-muted small fw-medium bg-light border rounded-pill px-3 py-1">
+              <i class="bi bi-clock me-1"></i> <span id="clock-display">...</span>
+            </div>
+          </div>
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label fw-medium text-muted small">Materi Pokok / Bahasan Topik</label>
+              <input type="text" class="form-control form-control-lg bg-light" id="input-materi" placeholder="Cth: Bab 1 - Rukun Iman" required>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Bagian 3: Presensi Santri -->
+      <section class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-header bg-white border-0 pt-4 pb-0 px-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
+          <h5 class="card-title fw-bold mb-0"><i class="bi bi-people me-2 text-info"></i>Daftar Santri</h5>
+          <div class="d-flex align-items-center gap-3">
+            <div class="input-group input-group-sm" style="width: 180px;">
+              <span class="input-group-text bg-light border-end-0">Set Nilai Semua</span>
+              <input type="number" id="input-default-nilai" class="form-control text-center" placeholder="0-100" min="0" max="100">
+            </div>
+            <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-2" id="santri-count">0 Santri</span>
+          </div>
+        </div>
+        <div class="card-body p-0 mt-3">
+          <div class="table-responsive table-scroll-container">
+            <table class="table table-hover align-middle mb-0 custom-table">
+              <thead class="table-light text-muted">
+                <tr>
+                  <th class="ps-4 fw-medium">Nama Santri</th>
+                  <th class="text-center fw-medium" width="300">Kehadiran</th>
+                  <th class="text-center fw-medium" width="120">Nilai</th>
+                  <th class="fw-medium">Catatan</th>
+                </tr>
+              </thead>
+              <tbody id="santri-tbody">
+                <!-- Data santri akan dirender di sini via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- Bagian 4: Catatan Evaluasi -->
+      <section class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-body p-4">
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label fw-medium text-muted small">Catatan Kejadian / Evaluasi (Opsional)</label>
+              <textarea class="form-control bg-light" id="input-catatan" rows="3" placeholder="Cth: Kelas kondusif, 2 santri remedial..."></textarea>
+            </div>
+          </div>
+        </div>
+      </section>
+      
+      <!-- Tombol Aksi Simpan -->
+      <div class="sticky-action-bar shadow-lg rounded-4 p-3 bg-white d-flex justify-content-between align-items-center mb-4 border">
+        <div class="text-muted small">
+          <i class="bi bi-info-circle me-1"></i> Pastikan semua data benar sebelum menyimpan.
+        </div>
+        <button id="btn-save-all" class="btn btn-success px-4 py-2 rounded-pill fw-bold shadow-sm">
+          <i class="bi bi-cloud-arrow-up me-2"></i>Simpan KBM
+        </button>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Modal Konfirmasi PIN -->
+  <div class="modal fade" id="pinModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+      <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+        <div class="modal-header bg-light border-0">
+          <h6 class="modal-title fw-bold"><i class="bi bi-shield-lock me-2 text-primary"></i>Verifikasi Keamanan</h6>
+          <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4 text-center">
+          <p class="text-muted small mb-3">Masukkan PIN KBM Anda untuk memvalidasi absensi dan jurnal.</p>
+          <div class="pin-display mb-3 text-primary fw-bolder fs-2 tracking-widest" id="pin-display">
+            ------
+          </div>
+          <div class="pin-pad row g-2">
+            <!-- Render via JS -->
+          </div>
+          <div id="pin-error" class="text-danger small mt-3 d-none fw-medium animate-shake">
+            PIN Salah! Kesempatan: <span id="pin-attempts">3</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function() {
+        navigator.serviceWorker.register('./sw.js').then(function(registration) {
+          console.log('ServiceWorker registration successful with scope: ', registration.scope);
+        }, function(err) {
+          console.log('ServiceWorker registration failed: ', err);
+        });
+      });
+    }
+  </script>
+</body>
+</html>
