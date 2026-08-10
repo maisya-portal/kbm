@@ -63,12 +63,17 @@ document.addEventListener('DOMContentLoaded', () => {
     // Map to objects so we can sort alphabetically
     const guruData = guruWithJadwal.map(idStaff => {
       const st = (staffList || []).find(s => s.ID_Staff === idStaff);
-      const nama = st ? st.Nama_Lengkap : (jadwals.find(j => j.ID_Staff === idStaff).Nama_Guru || idStaff);
+      let nama = st ? st.Nama_Lengkap : (jadwals.find(j => j.ID_Staff === idStaff).Nama_Guru || idStaff);
+      
+      // Ensure nama is a string and trim it to avoid sorting issues with spaces
+      nama = String(nama || '').trim();
+      if (!nama) nama = String(idStaff).trim();
+
       return { idStaff, nama };
     });
 
-    // Sort alphabetically by name
-    guruData.sort((a, b) => a.nama.localeCompare(b.nama));
+    // Sort alphabetically by name (case-insensitive)
+    guruData.sort((a, b) => a.nama.localeCompare(b.nama, 'id', { sensitivity: 'base' }));
 
     // Append sorted options to select
     guruData.forEach(item => {
