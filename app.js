@@ -629,10 +629,12 @@ document.addEventListener('DOMContentLoaded', () => {
   async function doClockOut() {
     showLoading(true);
     const namaGuru = selGuru.options[selGuru.selectedIndex] ? selGuru.options[selGuru.selectedIndex].text : selGuru.value;
+    const selectedJadwalId = selJam.options[selJam.selectedIndex] ? selJam.options[selJam.selectedIndex].getAttribute('data-id') : "";
     const payload = {
       action: 'clock_out',
       id_guru: selGuru.value,
       nama_guru: namaGuru,
+      id_jadwal: selectedJadwalId || "",
       timestamp: new Date().toISOString()
     };
     
