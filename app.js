@@ -30,6 +30,8 @@ document.addEventListener('DOMContentLoaded', () => {
   let allJadwal = [];
   let allMapel = [];
   let allSantri = [];
+  let progressInterval = null;
+  let jamMasukTime = null;
 
   // Init Data from Server
   async function initData() {
@@ -102,7 +104,10 @@ document.addEventListener('DOMContentLoaded', () => {
   selMapel.addEventListener('change', updateKelas);
   selKelas.addEventListener('change', updateJam);
   selJam.addEventListener('change', () => {
-    if (selJam.value) btnLoad.disabled = false;
+    if (selJam.value) {
+      btnLoad.disabled = false;
+      startProgressBar();
+    }
   });
 
   function updateMapel() {
@@ -344,12 +349,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   if (btnJamMasuk) {
-    btnJamMasuk.addEventListener('click', () => {
-      pinContext = 'clock_in';
-      inputPin = "";
-      updatePinDisplay();
-      pinError.classList.add('d-none');
-      pinModalInstance.show();
+    btnJamMasuk.addEventListener('click', async () => {
+      await doClockIn();
     });
   }
 
@@ -549,6 +550,72 @@ document.addEventListener('DOMContentLoaded', () => {
      if(clockActions) clockActions.classList.add('d-none');
      if(btnJamKeluar) btnJamKeluar.classList.remove('d-none');
      selMapel.disabled = false;
+     
+     jamMasukTime = new Date();
+     startProgressBar();
+  }
+  
+  function startProgressBar() {
+    const statusMengajar = document.getElementById('status-mengajar');
+    const progressMengajar = document.getElementById('progress-mengajar');
+    const sisaWaktuText = document.getElementById('sisa-waktu-text');
+    const txtWaktuMasuk = document.getElementById('waktu-jam-masuk');
+    
+    if(!statusMengajar || !selJam.value || !jamMasukTime) return;
+    
+    statusMengajar.classList.remove('d-none');
+    
+    const h = String(jamMasukTime.getHours()).padStart(2, '0');
+    const m = String(jamMasukTime.getMinutes()).padStart(2, '0');
+    txtWaktuMasuk.innerText = `${h}:${m}`;
+
+    const timeRegex = /(\d{2}:\d{2})\s*-\s*(\d{2}:\d{2})/;
+    const match = selJam.value.match(timeRegex);
+    
+    if(!match) {
+      sisaWaktuText.innerText = "Waktu tidak diketahui";
+      progressMengajar.style.width = "100%";
+      return;
+    }
+    
+    const startTimeStr = match[1];
+    const endTimeStr = match[2];
+    
+    const now = new Date();
+    const startTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), parseInt(startTimeStr.split(':')[0]), parseInt(startTimeStr.split(':')[1]), 0);
+    const endTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), parseInt(endTimeStr.split(':')[0]), parseInt(endTimeStr.split(':')[1]), 0);
+    
+    if(endTime < startTime) endTime.setDate(endTime.getDate() + 1);
+
+    if(progressInterval) clearInterval(progressInterval);
+    
+    const updateProgress = () => {
+      const currentTime = new Date();
+      const totalDuration = endTime - startTime;
+      const elapsed = currentTime - startTime;
+      const remaining = endTime - currentTime;
+      
+      if(remaining <= 0) {
+        sisaWaktuText.innerText = "Waktu Habis";
+        progressMengajar.style.width = "100%";
+        progressMengajar.classList.remove('bg-success');
+        progressMengajar.classList.add('bg-danger');
+        clearInterval(progressInterval);
+      } else if (currentTime < startTime) {
+        sisaWaktuText.innerText = "Belum Mulai";
+        progressMengajar.style.width = "0%";
+      } else {
+        const remainingMinutes = Math.ceil(remaining / 1000 / 60);
+        sisaWaktuText.innerText = `${remainingMinutes} menit lagi`;
+        const percentage = (elapsed / totalDuration) * 100;
+        progressMengajar.style.width = `${Math.min(100, Math.max(0, percentage))}%`;
+        progressMengajar.classList.add('bg-success');
+        progressMengajar.classList.remove('bg-danger');
+      }
+    };
+    
+    updateProgress();
+    progressInterval = setInterval(updateProgress, 60000);
   }
 
   async function doClockOut() {
