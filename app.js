@@ -521,9 +521,17 @@ document.addEventListener('DOMContentLoaded', () => {
         
         showLoading(false);
         if(res.success) {
-          Swal.fire('Berhasil!', 'Data Presensi dan Jurnal Mengajar telah tersimpan ke database.', 'success');
-          resetFormComplete();
-          pinAttempts = 3;
+          // Update id_jadwal into activeClockIn BEFORE form is reset so doClockOut can use it
+          if(activeClockIn && payload.id_jadwal) {
+            activeClockIn.id_jadwal = payload.id_jadwal;
+          }
+          
+          Swal.fire('Berhasil!', 'Data Presensi dan Jurnal Mengajar telah tersimpan ke database.', 'success').then(() => {
+            resetFormComplete();
+            pinAttempts = 3;
+            // Otomatis menekan tombol keluar
+            doClockOut();
+          });
         } else {
           Swal.fire('Gagal', res.message || 'Terjadi kesalahan saat menyimpan.', 'error');
         }
