@@ -513,9 +513,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function doClockIn() {
     showLoading(true);
+    const namaGuru = selGuru.options[selGuru.selectedIndex] ? selGuru.options[selGuru.selectedIndex].text : selGuru.value;
     const payload = {
       action: 'clock_in',
       id_guru: selGuru.value,
+      nama_guru: namaGuru,
       timestamp: new Date().toISOString()
     };
     
@@ -561,13 +563,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const sisaWaktuText = document.getElementById('sisa-waktu-text');
     const txtWaktuMasuk = document.getElementById('waktu-jam-masuk');
     
-    if(!statusMengajar || !selJam.value || !jamMasukTime) return;
+    if(!statusMengajar || !jamMasukTime) return;
     
     statusMengajar.classList.remove('d-none');
     
     const h = String(jamMasukTime.getHours()).padStart(2, '0');
     const m = String(jamMasukTime.getMinutes()).padStart(2, '0');
     txtWaktuMasuk.innerText = `${h}:${m}`;
+
+    if (!selJam.value) {
+      sisaWaktuText.innerText = "Pilih Jam Pelajaran";
+      progressMengajar.style.width = "0%";
+      return;
+    }
 
     const timeRegex = /(\d{2}:\d{2})\s*-\s*(\d{2}:\d{2})/;
     const match = selJam.value.match(timeRegex);
@@ -620,9 +628,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function doClockOut() {
     showLoading(true);
+    const namaGuru = selGuru.options[selGuru.selectedIndex] ? selGuru.options[selGuru.selectedIndex].text : selGuru.value;
     const payload = {
       action: 'clock_out',
       id_guru: selGuru.value,
+      nama_guru: namaGuru,
       timestamp: new Date().toISOString()
     };
     
