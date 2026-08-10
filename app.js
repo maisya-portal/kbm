@@ -112,7 +112,18 @@ document.addEventListener('DOMContentLoaded', () => {
       selMapel.innerHTML += `<option value="${id}">${namaMapel}</option>`;
     });
     
-    selMapel.disabled = uniqueMapelIds.length === 0;
+    selMapel.disabled = true;
+    
+    const clockActions = document.getElementById('clock-actions');
+    const btnJamKeluar = document.getElementById('btn-jam-keluar');
+    
+    if(btnJamKeluar) btnJamKeluar.classList.add('d-none');
+    
+    if(uniqueMapelIds.length > 0) {
+      if(clockActions) clockActions.classList.remove('d-none');
+    } else {
+      if(clockActions) clockActions.classList.add('d-none');
+    }
     
     if (uniqueMapelIds.length === 1) {
       selMapel.value = uniqueMapelIds[0];
@@ -294,12 +305,17 @@ document.addEventListener('DOMContentLoaded', () => {
   let inputPin = "";
   let pinAttempts = 3;
   let pinModalInstance = null;
+  let pinContext = 'save'; // 'save' or 'clock_in'
 
   const btnSaveAll = document.getElementById('btn-save-all');
   const pinDisplay = document.getElementById('pin-display');
   const pinError = document.getElementById('pin-error');
   const attemptsEl = document.getElementById('pin-attempts');
   const pinPadContainer = document.querySelector('.pin-pad');
+  
+  const btnJamMasuk = document.getElementById('btn-jam-masuk');
+  const btnJamKeluar = document.getElementById('btn-jam-keluar');
+  const clockActions = document.getElementById('clock-actions');
 
   // Initialize Modal
   const pinModalEl = document.getElementById('pinModal');
@@ -322,6 +338,22 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  if (btnJamMasuk) {
+    btnJamMasuk.addEventListener('click', () => {
+      pinContext = 'clock_in';
+      inputPin = "";
+      updatePinDisplay();
+      pinError.classList.add('d-none');
+      pinModalInstance.show();
+    });
+  }
+
+  if (btnJamKeluar) {
+    btnJamKeluar.addEventListener('click', async () => {
+       await doClockOut();
+    });
+  }
+
   btnSaveAll.addEventListener('click', () => {
     // Validate Jurnal Input before asking PIN
     const materi = document.getElementById('input-materi').value;
@@ -331,6 +363,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // Reset PIN State
+    pinContext = 'save';
     inputPin = "";
     updatePinDisplay();
     pinError.classList.add('d-none');
@@ -375,7 +408,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if(inputPin === validPin) {
       // Success
       pinModalInstance.hide();
-      saveData();
+      if(pinContext === 'save') {
+        saveData();
+      } else if(pinContext === 'clock_in') {
+        doClockIn();
+      }
     } else {
       // Failed
       pinAttempts--;
@@ -462,6 +499,80 @@ document.addEventListener('DOMContentLoaded', () => {
       } catch (err) {
         showLoading(false);
         Swal.fire('Error', 'Gagal mengirim data ke server.', 'error');
+        console.error(err);
+      }
+    }
+  }
+
+  async function doClockIn() {
+    showLoading(true);
+    const payload = {
+      id_guru: selGuru.value,
+      timestamp: new Date().toISOString()
+    };
+    
+    if(!navigator.onLine) {
+      showLoading(false);
+      Swal.fire('Tersimpan Offline', 'Jam Masuk disimpan lokal.', 'info');
+      onClockInSuccess();
+    } else {
+      try {
+        const response = await fetch(GAS_URL.replace("get_jadwal_kbm", "clock_in"), {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
+        const res = await response.json();
+        
+        showLoading(false);
+        if(res.success) {
+          Swal.fire('Berhasil', 'Jam Masuk berhasil dicatat.', 'success');
+          onClockInSuccess();
+        } else {
+          Swal.fire('Gagal', res.message || 'Terjadi kesalahan.', 'error');
+        }
+      } catch (err) {
+        showLoading(false);
+        Swal.fire('Error', 'Gagal menghubungi server.', 'error');
+        console.error(err);
+      }
+    }
+  }
+
+  function onClockInSuccess() {
+     if(clockActions) clockActions.classList.add('d-none');
+     if(btnJamKeluar) btnJamKeluar.classList.remove('d-none');
+     selMapel.disabled = false;
+  }
+
+  async function doClockOut() {
+    showLoading(true);
+    const payload = {
+      id_guru: selGuru.value,
+      timestamp: new Date().toISOString()
+    };
+    
+    if(!navigator.onLine) {
+      showLoading(false);
+      Swal.fire('Tersimpan Offline', 'Jam Keluar disimpan lokal.', 'info');
+      if(btnJamKeluar) btnJamKeluar.classList.add('d-none');
+    } else {
+      try {
+        const response = await fetch(GAS_URL.replace("get_jadwal_kbm", "clock_out"), {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
+        const res = await response.json();
+        
+        showLoading(false);
+        if(res.success) {
+          Swal.fire('Berhasil', 'Jam Keluar berhasil dicatat.', 'success');
+          if(btnJamKeluar) btnJamKeluar.classList.add('d-none');
+        } else {
+          Swal.fire('Gagal', res.message || 'Terjadi kesalahan.', 'error');
+        }
+      } catch (err) {
+        showLoading(false);
+        Swal.fire('Error', 'Gagal menghubungi server.', 'error');
         console.error(err);
       }
     }
