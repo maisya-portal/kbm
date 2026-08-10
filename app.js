@@ -469,6 +469,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     const payload = {
+      action: 'save_kbm',
       id_guru: selGuru.value,
       id_mapel: selMapel.value,
       kelas: selKelas.value,
@@ -512,6 +513,7 @@ document.addEventListener('DOMContentLoaded', () => {
   async function doClockIn() {
     showLoading(true);
     const payload = {
+      action: 'clock_in',
       id_guru: selGuru.value,
       timestamp: new Date().toISOString()
     };
@@ -552,6 +554,7 @@ document.addEventListener('DOMContentLoaded', () => {
   async function doClockOut() {
     showLoading(true);
     const payload = {
+      action: 'clock_out',
       id_guru: selGuru.value,
       timestamp: new Date().toISOString()
     };
