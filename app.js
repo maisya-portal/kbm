@@ -521,9 +521,10 @@ document.addEventListener('DOMContentLoaded', () => {
         
         showLoading(false);
         if(res.success) {
-          // Update id_jadwal into activeClockIn BEFORE form is reset so doClockOut can use it
-          if(activeClockIn && payload.id_jadwal) {
-            activeClockIn.id_jadwal = payload.id_jadwal;
+          // Update id_jadwal and kelas into activeClockIn BEFORE form is reset so doClockOut can use it
+          if(activeClockIn) {
+            if(payload.id_jadwal) activeClockIn.id_jadwal = payload.id_jadwal;
+            if(payload.kelas) activeClockIn.kelas = payload.kelas;
           }
           
           Swal.fire('Berhasil!', 'Data Presensi dan Jurnal Mengajar telah tersimpan ke database.', 'success').then(() => {
@@ -544,6 +545,11 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function doClockIn() {
+    if (!selGuru.value) {
+      Swal.fire('Perhatian', 'Silakan pilih Nama Guru terlebih dahulu.', 'warning');
+      return;
+    }
+    
     showLoading(true);
     const namaGuru = selGuru.options[selGuru.selectedIndex] ? selGuru.options[selGuru.selectedIndex].text : selGuru.value;
     const payload = {
@@ -681,12 +687,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // Fallback if not stored in activeClockIn (e.g. page wasn't refreshed but state lost somehow)
     const fallbackNama = selGuru.options[selGuru.selectedIndex] ? selGuru.options[selGuru.selectedIndex].text : selGuru.value;
     const fallbackJadwal = selJam.options[selJam.selectedIndex] ? selJam.options[selJam.selectedIndex].getAttribute('data-id') : "";
+    const fallbackKelas = selKelas.value || "";
     
     const payload = {
       action: 'clock_out',
       id_guru: activeClockIn ? activeClockIn.id_guru : selGuru.value,
       nama_guru: activeClockIn ? activeClockIn.nama_guru : fallbackNama,
       id_jadwal: (activeClockIn && activeClockIn.id_jadwal) ? activeClockIn.id_jadwal : fallbackJadwal,
+      kelas: (activeClockIn && activeClockIn.kelas) ? activeClockIn.kelas : fallbackKelas,
       timestamp: new Date().toISOString()
     };
     
