@@ -496,6 +496,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const payload = {
       action: 'save_kbm',
       id_guru: selGuru.value,
+      nama_guru: selGuru.options[selGuru.selectedIndex] ? selGuru.options[selGuru.selectedIndex].text : selGuru.value,
       id_mapel: selMapel.value,
       kelas: selKelas.value,
       jam: selJam.value,
