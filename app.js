@@ -48,24 +48,6 @@ document.addEventListener('DOMContentLoaded', () => {
         allMapel = res.mapel || [];
         allSantri = res.santri || [];
         
-        // Inject Dummy Account
-        const dummyStaffId = "STF-DUMMY";
-        const dummyMapelId = "MPL-DUMMY";
-        const dummyKelas = "Kelas Uji Coba";
-        if(res.staff) res.staff.push({ ID_Staff: dummyStaffId, Nama_Lengkap: "GURU UJI COBA (FLEKSIBEL)" });
-        allMapel.push({ ID_Mapel: dummyMapelId, Nama_Mapel: "Mata Pelajaran Uji Coba" });
-        allJadwal.push({
-           ID_Jadwal: "JAD-DUMMY",
-           ID_Staff: dummyStaffId,
-           Nama_Guru: "GURU UJI COBA (FLEKSIBEL)",
-           ID_Mapel: dummyMapelId,
-           Kelas: dummyKelas,
-           Hari: "Setiap Hari",
-           Jam_Mulai: "00:00",
-           Jam_Selesai: "23:59"
-        });
-        allSantri.push({ ID_Santri: "SNT-DUMMY1", Nama_Lengkap: "Siswa Dummy 1", Kelas: dummyKelas, UID_Card: "1111" });
-        allSantri.push({ ID_Santri: "SNT-DUMMY2", Nama_Lengkap: "Siswa Dummy 2", Kelas: dummyKelas, UID_Card: "2222" });
 
         populateGuruDropdown(res.staff, allJadwal);
       } else {
