@@ -118,7 +118,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Populate filter dropdowns
-    const uniqueKelas = [...new Set(allJadwal.map(j => j.Kelas))].filter(Boolean).sort();
+    const uniqueKelas = [...new Set(allJadwal.map(j => j.Kelas))].filter(Boolean).sort((a, b) => {
+      const numA = parseInt(String(a).match(/\d+/)?.[0] || 0);
+      const numB = parseInt(String(b).match(/\d+/)?.[0] || 0);
+      return numA - numB;
+    });
+    
     const filterKelas = document.getElementById('filter-kelas');
     if (filterKelas) {
       filterKelas.innerHTML = '<option value="Semua Kelas">Semua Kelas</option>';
@@ -127,9 +132,20 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
-    // Filter event listeners
     const filterHari = document.getElementById('filter-hari');
     const filterJam = document.getElementById('filter-jam');
+    
+    // Set default hari to today
+    if(filterHari) {
+      const days = ['Ahad', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+      const today = days[new Date().getDay()];
+      for (let i = 0; i < filterHari.options.length; i++) {
+        if (filterHari.options[i].value.toLowerCase() === today.toLowerCase()) {
+          filterHari.value = filterHari.options[i].value;
+          break;
+        }
+      }
+    }
     
     if(filterHari) filterHari.addEventListener('change', drawDashboardTable);
     if(filterJam) filterJam.addEventListener('change', drawDashboardTable);
@@ -179,6 +195,13 @@ document.addEventListener('DOMContentLoaded', () => {
       tbody.innerHTML = '<tr><td colspan="5" class="text-center py-5 text-muted">Tidak ada jadwal yang cocok dengan filter.</td></tr>';
       return;
     }
+
+    // Sort jadwal by class number
+    filtered.sort((a, b) => {
+      const numA = parseInt(String(a.Kelas).match(/\d+/)?.[0] || 0);
+      const numB = parseInt(String(b.Kelas).match(/\d+/)?.[0] || 0);
+      return numA - numB;
+    });
 
     filtered.forEach(j => {
       let jamText = "";
