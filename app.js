@@ -324,6 +324,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let pinContext = 'save'; // 'save' or 'clock_in'
 
   const btnSaveAll = document.getElementById('btn-save-all');
+  const btnCancelKbm = document.getElementById('btn-cancel-kbm');
   const pinDisplay = document.getElementById('pin-display');
   const pinError = document.getElementById('pin-error');
   const attemptsEl = document.getElementById('pin-attempts');
@@ -363,6 +364,23 @@ document.addEventListener('DOMContentLoaded', () => {
   if (btnJamKeluar) {
     btnJamKeluar.addEventListener('click', async () => {
        await doClockOut();
+    });
+  }
+
+  if (btnCancelKbm) {
+    btnCancelKbm.addEventListener('click', () => {
+      Swal.fire({
+        title: 'Batalkan Pengisian?',
+        text: 'Data yang sudah Anda ketik akan hilang.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Ya, Batal',
+        cancelButtonText: 'Tidak'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          resetFormComplete();
+        }
+      });
     });
   }
 
