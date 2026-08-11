@@ -60,6 +60,80 @@
 
   <main class="container py-4 mb-5 pb-5">
     
+    <!-- Bagian 0: Dashboard Jadwal -->
+    <section id="dashboard-section" class="mb-4">
+      <div class="text-center mb-5 mt-3">
+        <h2 class="fw-bold text-success mb-2" style="font-family: 'Amiri', serif; font-size: 2.5rem;">أَهْلًا وَسَهْلًا وَمَرْحَبًا بِكُمْ</h2>
+        <h3 class="fw-bold text-dark h4 mb-2 mt-4">Portal KBM Ponpes Imam Syafi'i Brebes</h3>
+        <p class="text-muted small">Aplikasi Penunjang Proses KBM Ponpes Imam Syafi'i Brebes</p>
+        <p class="text-success small fw-medium mt-3"><i class="bi bi-hand-index-thumb"></i> Silakan pilih nama Anda pada tabel jadwal di bawah untuk memulai sesi.</p>
+      </div>
+
+      <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="card-header bg-white border-bottom py-3 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+          <h5 class="mb-0 fw-bold">Jadwal KBM</h5>
+          
+          <!-- Filters Dashboard -->
+          <div class="d-flex flex-wrap gap-2">
+            <select id="filter-hari" class="form-select form-select-sm bg-light shadow-none w-auto border-0">
+              <option value="Semua Hari">Semua Hari</option>
+              <option value="Senin">Senin</option>
+              <option value="Selasa">Selasa</option>
+              <option value="Rabu">Rabu</option>
+              <option value="Kamis">Kamis</option>
+              <option value="Jumat">Jumat</option>
+              <option value="Sabtu">Sabtu</option>
+              <option value="Ahad">Ahad</option>
+            </select>
+            <select id="filter-jam" class="form-select form-select-sm bg-light shadow-none w-auto border-0">
+              <option value="Semua Jam">Semua Jam</option>
+              <option value="Pagi">Pagi (Ke-1 - Ke-4)</option>
+              <option value="Siang">Siang (Ke-5 - Ke-6)</option>
+              <option value="Malam">Malam / Ekstra</option>
+            </select>
+            <select id="filter-kelas" class="form-select form-select-sm bg-light shadow-none w-auto border-0">
+              <option value="Semua Kelas">Semua Kelas</option>
+              <!-- Populated dynamically -->
+            </select>
+          </div>
+        </div>
+        
+        <div class="table-responsive">
+          <style>
+            #tabel-jadwal-dashboard tbody tr { cursor: pointer; transition: all 0.2s ease; }
+            #tabel-jadwal-dashboard tbody tr:hover { background-color: #f1f5f9; transform: scale(1.005); }
+          </style>
+          <table class="table align-middle mb-0" id="tabel-jadwal-dashboard">
+            <thead class="table-light text-muted small">
+              <tr>
+                <th class="py-3 px-4 fw-medium border-bottom-0">Hari</th>
+                <th class="py-3 px-4 fw-medium border-bottom-0">Waktu / Jam</th>
+                <th class="py-3 px-4 fw-medium border-bottom-0">Kelas</th>
+                <th class="py-3 px-4 fw-medium border-bottom-0">Pelajaran</th>
+                <th class="py-3 px-4 fw-medium border-bottom-0">Pengajar</th>
+              </tr>
+            </thead>
+            <tbody id="body-jadwal-dashboard">
+              <tr>
+                <td colspan="5" class="text-center py-5 text-muted">
+                  <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div> Memuat jadwal...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Wrap the original content in config-section -->
+    <div id="config-section" class="d-none">
+      
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <button id="btn-kembali-jadwal" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+          <i class="bi bi-arrow-left me-1"></i> Kembali ke Jadwal
+        </button>
+      </div>
+
     <!-- Bagian 1: Filter & Konteks KBM -->
     <section class="card border-0 shadow-sm rounded-4 mb-4 filter-section">
       <div class="card-body p-4">
@@ -215,6 +289,8 @@
       </div>
 
     </div>
+
+    </div> <!-- End config-section -->
 
   </main>
 

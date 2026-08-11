@@ -30,6 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let allJadwal = [];
   let allMapel = [];
   let allSantri = [];
+  let allStaff = [];
   let progressInterval = null;
   let jamMasukTime = null;
   
@@ -47,9 +48,11 @@ document.addEventListener('DOMContentLoaded', () => {
         allJadwal = res.jadwal || [];
         allMapel = res.mapel || [];
         allSantri = res.santri || [];
+        allStaff = res.staff || [];
         
 
-        populateGuruDropdown(res.staff, allJadwal);
+        populateGuruDropdown(allStaff, allJadwal);
+        renderDashboard(); // Render the dashboard after data is loaded
       } else {
         Swal.fire('Error', 'Gagal memuat data jadwal dari server.', 'error');
       }
@@ -102,6 +105,173 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     // If it's something like "11.00"
     return String(timeStr).replace(".", ":").substring(0,5);
+  }
+
+  // Dashboard Rendering
+  function renderDashboard() {
+    const tbody = document.getElementById('body-jadwal-dashboard');
+    if (!tbody) return;
+
+    if (allJadwal.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" class="text-center py-5 text-muted">Jadwal tidak tersedia</td></tr>';
+      return;
+    }
+
+    // Populate filter dropdowns
+    const uniqueKelas = [...new Set(allJadwal.map(j => j.Kelas))].filter(Boolean).sort();
+    const filterKelas = document.getElementById('filter-kelas');
+    if (filterKelas) {
+      filterKelas.innerHTML = '<option value="Semua Kelas">Semua Kelas</option>';
+      uniqueKelas.forEach(k => {
+        filterKelas.innerHTML += `<option value="${k}">${k}</option>`;
+      });
+    }
+
+    // Filter event listeners
+    const filterHari = document.getElementById('filter-hari');
+    const filterJam = document.getElementById('filter-jam');
+    
+    if(filterHari) filterHari.addEventListener('change', drawDashboardTable);
+    if(filterJam) filterJam.addEventListener('change', drawDashboardTable);
+    if(filterKelas) filterKelas.addEventListener('change', drawDashboardTable);
+
+    // Initial draw
+    drawDashboardTable();
+  }
+
+  function drawDashboardTable() {
+    const tbody = document.getElementById('body-jadwal-dashboard');
+    if (!tbody) return;
+
+    const filterHariVal = document.getElementById('filter-hari') ? document.getElementById('filter-hari').value : 'Semua Hari';
+    const filterJamVal = document.getElementById('filter-jam') ? document.getElementById('filter-jam').value : 'Semua Jam';
+    const filterKelasVal = document.getElementById('filter-kelas') ? document.getElementById('filter-kelas').value : 'Semua Kelas';
+
+    let filtered = allJadwal;
+
+    if (filterHariVal !== 'Semua Hari') {
+      filtered = filtered.filter(j => String(j.Hari).toLowerCase() === String(filterHariVal).toLowerCase());
+    }
+    
+    if (filterKelasVal !== 'Semua Kelas') {
+      filtered = filtered.filter(j => String(j.Kelas) === String(filterKelasVal));
+    }
+
+    // For jam filtering, we use simple text matching on the "Jam Ke-" field if available
+    if (filterJamVal !== 'Semua Jam') {
+       // Pagi (1-4), Siang (5-6), Malam
+       filtered = filtered.filter(j => {
+         const jamStr = String(j.Jam_Mengajar || j.Jam || '').toLowerCase();
+         if (filterJamVal === 'Pagi') {
+            return jamStr.includes('1') || jamStr.includes('2') || jamStr.includes('3') || jamStr.includes('4') || jamStr.includes('pagi');
+         } else if (filterJamVal === 'Siang') {
+            return jamStr.includes('5') || jamStr.includes('6') || jamStr.includes('7') || jamStr.includes('8') || jamStr.includes('siang');
+         } else if (filterJamVal === 'Malam') {
+            return jamStr.includes('malam') || jamStr.includes('ekstra');
+         }
+         return true;
+       });
+    }
+
+    tbody.innerHTML = '';
+    
+    if (filtered.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" class="text-center py-5 text-muted">Tidak ada jadwal yang cocok dengan filter.</td></tr>';
+      return;
+    }
+
+    filtered.forEach(j => {
+      let jamText = "";
+      if (j.Jam_Mulai && j.Jam_Selesai) {
+        jamText = `${formatTime(j.Jam_Mulai)} - ${formatTime(j.Jam_Selesai)}`;
+      } else {
+        jamText = j.Jam_Mengajar || j.Jam || (j.Jam_Mulai + ' - ' + j.Jam_Selesai);
+      }
+      
+      const st = (allStaff || []).find(s => s.ID_Staff === j.ID_Staff);
+      let namaGuru = st ? st.Nama_Lengkap : (j.Nama_Guru || j.ID_Staff);
+      
+      const mapelObj = allMapel.find(m => m.ID_Mapel === j.ID_Mapel);
+      const namaMapel = mapelObj ? mapelObj.Nama_Mapel : j.ID_Mapel;
+      
+      // We pass the required data in data- attributes so click can handle it
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="py-3 px-4">${j.Hari || '-'}</td>
+        <td class="py-3 px-4"><span class="badge bg-light text-secondary border border-secondary-subtle">${jamText}</span></td>
+        <td class="py-3 px-4 fw-medium text-primary">${j.Kelas || '-'}</td>
+        <td class="py-3 px-4">${namaMapel || '-'}</td>
+        <td class="py-3 px-4 text-muted">${namaGuru || '-'}</td>
+      `;
+      
+      tr.addEventListener('click', () => {
+         selectJadwalFromDashboard(j.ID_Staff, j.ID_Mapel, j.Kelas, jamText);
+      });
+      
+      tbody.appendChild(tr);
+    });
+  }
+
+  function selectJadwalFromDashboard(idGuru, idMapel, kelas, jamText) {
+     // Hide dashboard, show config
+     document.getElementById('dashboard-section').classList.add('d-none');
+     document.getElementById('config-section').classList.remove('d-none');
+     
+     // Set dropdowns manually and trigger cascades
+     selGuru.value = idGuru;
+     updateMapel(); // this populates Mapel based on Guru
+     
+     setTimeout(() => {
+       selMapel.value = idMapel;
+       updateKelas(); // this populates Kelas based on Mapel
+       
+       setTimeout(() => {
+         selKelas.value = kelas;
+         updateJam(); // this populates Jam
+         
+         setTimeout(() => {
+           // Some jam options might have day prefix
+           // So we select by matching text
+           for (let i = 0; i < selJam.options.length; i++) {
+             if (selJam.options[i].value.includes(jamText)) {
+               selJam.selectedIndex = i;
+               break;
+             }
+           }
+           
+           if (selJam.value) {
+             btnLoad.disabled = false;
+             // Don't auto-start progress bar here to let them see the config first
+           }
+         }, 50);
+       }, 50);
+     }, 50);
+  }
+
+  // Tombol Kembali
+  const btnKembali = document.getElementById('btn-kembali-jadwal');
+  if (btnKembali) {
+    btnKembali.addEventListener('click', () => {
+      document.getElementById('config-section').classList.add('d-none');
+      document.getElementById('dashboard-section').classList.remove('d-none');
+      
+      // Reset selections
+      selGuru.value = "";
+      selMapel.innerHTML = '<option value="" selected disabled>-- Mata Pelajaran --</option>';
+      selMapel.disabled = true;
+      selKelas.innerHTML = '<option value="" selected disabled>-- Kelas --</option>';
+      selKelas.disabled = true;
+      selJam.innerHTML = '<option value="" selected disabled>-- Jam Ke --</option>';
+      selJam.disabled = true;
+      btnLoad.disabled = true;
+      document.getElementById('content-area').classList.add('d-none');
+      
+      const clockActions = document.getElementById('clock-actions');
+      if (clockActions) clockActions.classList.add('d-none');
+      
+      const btnKeluar = document.getElementById('btn-jam-keluar');
+      if (btnKeluar) btnKeluar.classList.add('d-none');
+    });
   }
 
   // Enable cascade selects and filter based on selected Guru
