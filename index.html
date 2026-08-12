@@ -165,13 +165,12 @@
                 <th class="py-3 px-3 fw-medium border-bottom-0 text-nowrap">Status Guru</th>
                 <th class="py-3 px-3 fw-medium border-bottom-0 text-center text-nowrap">Santri (H/I/S/A)</th>
                 <th class="py-3 px-3 fw-medium border-bottom-0">Materi & Jurnal</th>
-                <th class="py-3 px-3 fw-medium border-bottom-0 text-nowrap">Detail Santri</th>
                 <th class="py-3 px-3 fw-medium border-bottom-0 text-nowrap">Aksi</th>
               </tr>
             </thead>
             <tbody id="body-log">
               <tr>
-                <td colspan="11" class="text-center py-5 text-muted">
+                <td colspan="10" class="text-center py-5 text-muted">
                   <div class="text-center mb-3">
                     <i class="bi bi-calendar2-x display-4 text-light"></i>
                   </div>
@@ -372,6 +371,20 @@
           <div id="pin-error" class="text-danger small mt-3 d-none fw-medium animate-shake">
             PIN Salah! Kesempatan: <span id="pin-attempts">3</span>
           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Detail Santri -->
+  <div class="modal fade" id="modal-detail-santri" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content border-0 rounded-4 shadow">
+        <div class="modal-header border-bottom-0 pb-0">
+          <h5 class="modal-title fw-bold">Detail Catatan Santri</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body pb-4" id="modal-detail-santri-body">
         </div>
       </div>
     </div>

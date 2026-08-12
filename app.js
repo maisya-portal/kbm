@@ -220,10 +220,15 @@ document.addEventListener('DOMContentLoaded', () => {
       const namaMapel = mapelObj ? mapelObj.Nama_Mapel : j.ID_Mapel;
       
       let badgeHtml = '';
-      if (activeJadwalIds.includes(j.ID_Jadwal)) {
-          badgeHtml = `<span class="badge bg-success rounded-pill ms-2 shadow-sm" style="animation: pulse 1.5s infinite;">
-            <i class="bi bi-broadcast"></i> Mengajar
-          </span>`;
+      let idJ = j.ID_Jadwal || j["ID Jadwal"];
+      if (activeJadwalIds.includes(idJ)) {
+          badgeHtml = `<div class="mt-1"><span class="badge bg-success rounded-pill shadow-sm" style="animation: pulse 1.5s infinite;">
+            <i class="bi bi-broadcast"></i> Sedang Mengajar
+          </span></div>`;
+      } else {
+          badgeHtml = `<div class="mt-1"><span class="badge bg-secondary text-light rounded-pill shadow-sm">
+            <i class="bi bi-dash-circle"></i> Belum mengisi
+          </span></div>`;
       }
 
       // We pass the required data in data- attributes so click can handle it
@@ -232,8 +237,8 @@ document.addEventListener('DOMContentLoaded', () => {
         <td class="py-3 px-4">${j.Hari || '-'}</td>
         <td class="py-3 px-4"><span class="badge bg-light text-secondary border border-secondary-subtle">${jamText}</span></td>
         <td class="py-3 px-4 fw-medium text-primary">${j.Kelas || '-'}</td>
-        <td class="py-3 px-4">${namaMapel || '-'}${badgeHtml}</td>
-        <td class="py-3 px-4 text-muted">${namaGuru || '-'}</td>
+        <td class="py-3 px-4">${namaMapel || '-'}</td>
+        <td class="py-3 px-4 text-muted">${namaGuru || '-'}${badgeHtml}</td>
       `;
       
       tr.addEventListener('click', () => {
@@ -363,11 +368,16 @@ document.addEventListener('DOMContentLoaded', () => {
              let text = `<strong>${c.nama}</strong>: `;
              if(c.nilai) text += `<span class="badge bg-success ms-1">Nilai: ${c.nilai}</span>`;
              if(c.catatan) text += `<span class="text-muted ms-1 fst-italic">"${c.catatan}"</span>`;
-             return `<li>${text}</li>`;
+             return `<li class="mb-2 pb-2 border-bottom">${text}</li>`;
          }).join('');
-         catatanSantriHtml = `<ul class="mb-0 ps-3 small">${lis}</ul>`;
+         catatanSantriHtml = `<ul class="list-unstyled mb-0">${lis}</ul>`;
       } else {
-         catatanSantriHtml = `<span class="text-muted small">-</span>`;
+         catatanSantriHtml = `<div class="text-center text-muted py-3">Tidak ada catatan khusus untuk santri di sesi ini.</div>`;
+      }
+      
+      window.santriDetailsCache = window.santriDetailsCache || {};
+      if (item.status_isi) {
+         window.santriDetailsCache[item.id_jurnal] = catatanSantriHtml;
       }
 
       let badgeMasuk = '';
@@ -408,7 +418,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <td class="fw-medium">${item.pelajaran}</td>
         <td>${item.guru}</td>
         <td>${statusHtml}</td>
-        <td class="text-center" style="cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#detail-santri-${index}" title="Klik untuk lihat detail">
+        <td class="text-center" style="cursor: pointer;" onclick="showDetailSantriModal('${item.id_jurnal}')" title="Klik untuk lihat detail santri">
            <span class="badge bg-success" title="Hadir">${item.hadir}</span> /
            <span class="badge bg-warning text-dark" title="Izin">${item.izin}</span> /
            <span class="badge bg-info text-dark" title="Sakit">${item.sakit}</span> /
@@ -417,16 +427,6 @@ document.addEventListener('DOMContentLoaded', () => {
         <td>
            <div class="fw-medium small">${item.materi}</div>
            <div class="text-muted small fst-italic mt-1">${item.catatan_kelas}</div>
-        </td>
-        <td>
-           ${item.status_isi ? `<button class="btn btn-sm btn-outline-secondary rounded-pill py-0 px-2" type="button" data-bs-toggle="collapse" data-bs-target="#detail-santri-${index}" aria-expanded="false" aria-controls="detail-santri-${index}">
-             <i class="bi bi-eye"></i> Detail
-           </button>
-           <div class="collapse mt-2" id="detail-santri-${index}">
-             <div class="card card-body p-2 border-0 bg-light shadow-sm">
-               ${catatanSantriHtml}
-             </div>
-           </div>` : '-'}
         </td>
         <td>
            ${item.status_isi ? `<div class="d-flex gap-1 justify-content-center">
@@ -461,6 +461,15 @@ document.addEventListener('DOMContentLoaded', () => {
        });
     });
   }
+
+  window.showDetailSantriModal = function(idJurnal) {
+      if (!idJurnal || idJurnal === 'undefined') return;
+      const html = window.santriDetailsCache[idJurnal] || '<div class="text-center py-3 text-muted">Data tidak ditemukan.</div>';
+      const body = document.getElementById('modal-detail-santri-body');
+      if (body) body.innerHTML = html;
+      const myModal = new bootstrap.Modal(document.getElementById('modal-detail-santri'));
+      myModal.show();
+  };
 
   function confirmDeleteLog(idJurnal) {
     Swal.fire({
