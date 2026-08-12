@@ -31,6 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let allMapel = [];
   let allSantri = [];
   let allStaff = [];
+  let activeJadwalIds = [];
   let progressInterval = null;
   let jamMasukTime = null;
   
@@ -49,7 +50,8 @@ document.addEventListener('DOMContentLoaded', () => {
         allMapel = res.mapel || [];
         allSantri = res.santri || [];
         allStaff = res.staff || [];
-        
+        activeJadwalIds = res.active_jadwal || [];
+
 
         populateGuruDropdown(allStaff, allJadwal);
         renderDashboard(); // Render the dashboard after data is loaded
@@ -217,13 +219,20 @@ document.addEventListener('DOMContentLoaded', () => {
       const mapelObj = allMapel.find(m => m.ID_Mapel === j.ID_Mapel);
       const namaMapel = mapelObj ? mapelObj.Nama_Mapel : j.ID_Mapel;
       
+      let badgeHtml = '';
+      if (activeJadwalIds.includes(j.ID_Jadwal)) {
+          badgeHtml = `<span class="badge bg-success rounded-pill ms-2 shadow-sm" style="animation: pulse 1.5s infinite;">
+            <i class="bi bi-broadcast"></i> Mengajar
+          </span>`;
+      }
+
       // We pass the required data in data- attributes so click can handle it
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td class="py-3 px-4">${j.Hari || '-'}</td>
         <td class="py-3 px-4"><span class="badge bg-light text-secondary border border-secondary-subtle">${jamText}</span></td>
         <td class="py-3 px-4 fw-medium text-primary">${j.Kelas || '-'}</td>
-        <td class="py-3 px-4">${namaMapel || '-'}</td>
+        <td class="py-3 px-4">${namaMapel || '-'}${badgeHtml}</td>
         <td class="py-3 px-4 text-muted">${namaGuru || '-'}</td>
       `;
       
@@ -342,7 +351,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function renderLogTable(data) {
     if (!data || data.length === 0) {
-      tbodyLog.innerHTML = `<tr><td colspan="10" class="text-center py-5 text-muted"><div class="text-center mb-3"><i class="bi bi-calendar2-x display-4 text-light"></i></div>Tidak ada log presensi untuk tanggal ini.</td></tr>`;
+      tbodyLog.innerHTML = `<tr><td colspan="11" class="text-center py-5 text-muted"><div class="text-center mb-3"><i class="bi bi-calendar2-x display-4 text-light"></i></div>Tidak ada jadwal KBM pada hari ini.</td></tr>`;
       return;
     }
 
@@ -361,15 +370,44 @@ document.addEventListener('DOMContentLoaded', () => {
          catatanSantriHtml = `<span class="text-muted small">-</span>`;
       }
 
+      let badgeMasuk = '';
+      if (item.status_isi) {
+         if (item.late_mins > 0) {
+            badgeMasuk = `<div class="mt-1"><span class="badge bg-danger rounded-pill" style="font-size: 0.7rem;">Terlambat ${item.late_mins} mnt</span></div>`;
+         } else {
+            badgeMasuk = `<div class="mt-1"><span class="badge bg-success rounded-pill" style="font-size: 0.7rem;">Tepat waktu</span></div>`;
+         }
+      }
+
+      let badgeKeluar = '';
+      if (item.status_isi && item.jam_ke !== '-') {
+         if (item.over_mins > 0) {
+            badgeKeluar = `<div class="mt-1"><span class="badge bg-warning text-dark rounded-pill" style="font-size: 0.7rem;">Lebih ${item.over_mins} mnt</span></div>`;
+         }
+      }
+      
+      let statusHtml = '';
+      if (item.status_isi) {
+          statusHtml = `<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Hadir</span>`;
+      } else {
+          statusHtml = `<span class="badge bg-secondary text-light"><i class="bi bi-dash-circle me-1"></i>Belum mengisi</span>`;
+      }
+
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td class="fw-medium">${item.no}</td>
-        <td><span class="badge bg-light text-dark border"><i class="bi bi-clock me-1"></i>${item.waktu}</span></td>
-        <td class="text-nowrap">${item.jam_ke}</td>
+        <td>
+           <span class="badge bg-light text-dark border"><i class="bi bi-clock me-1"></i>${item.waktu}</span>
+           ${badgeMasuk}
+        </td>
+        <td class="text-nowrap">
+           <span class="badge bg-light text-dark border"><i class="bi bi-clock me-1"></i>${item.jam_ke}</span>
+           ${badgeKeluar}
+        </td>
         <td><span class="badge bg-primary">${item.kelas}</span></td>
         <td class="fw-medium">${item.pelajaran}</td>
         <td>${item.guru}</td>
-        <td><span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>${item.status_guru}</span></td>
+        <td>${statusHtml}</td>
         <td class="text-center">
            <span class="badge bg-success" title="Hadir">${item.hadir}</span> /
            <span class="badge bg-warning text-dark" title="Izin">${item.izin}</span> /
@@ -381,19 +419,19 @@ document.addEventListener('DOMContentLoaded', () => {
            <div class="text-muted small fst-italic mt-1">${item.catatan_kelas}</div>
         </td>
         <td>
-           <button class="btn btn-sm btn-outline-secondary rounded-pill py-0 px-2" type="button" data-bs-toggle="collapse" data-bs-target="#detail-santri-${index}" aria-expanded="false" aria-controls="detail-santri-${index}">
+           ${item.status_isi ? `<button class="btn btn-sm btn-outline-secondary rounded-pill py-0 px-2" type="button" data-bs-toggle="collapse" data-bs-target="#detail-santri-${index}" aria-expanded="false" aria-controls="detail-santri-${index}">
              <i class="bi bi-eye"></i> Detail
            </button>
            <div class="collapse mt-2" id="detail-santri-${index}">
              <div class="card card-body p-2 border-0 bg-light shadow-sm">
                ${catatanSantriHtml}
              </div>
-           </div>
+           </div>` : '-'}
         </td>
         <td>
-           <button class="btn btn-sm btn-outline-danger rounded-pill py-0 px-2 btn-delete-log" data-id="${item.id_jurnal}" title="Hapus Log">
+           ${item.status_isi ? `<button class="btn btn-sm btn-outline-danger rounded-pill py-0 px-2 btn-delete-log" data-id="${item.id_jurnal}" title="Hapus Log">
              <i class="bi bi-trash"></i>
-           </button>
+           </button>` : '-'}
         </td>
       `;
       tbodyLog.appendChild(tr);
