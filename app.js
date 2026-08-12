@@ -239,6 +239,8 @@ document.addEventListener('DOMContentLoaded', () => {
      // Hide dashboard, show config
      document.getElementById('dashboard-section').classList.add('d-none');
      document.getElementById('config-section').classList.remove('d-none');
+     if(document.getElementById('welcome-header')) document.getElementById('welcome-header').classList.add('d-none');
+     if(document.getElementById('main-nav-container')) document.getElementById('main-nav-container').classList.add('d-none');
      
      // Set dropdowns manually and trigger cascades
      selGuru.value = idGuru;
@@ -398,7 +400,16 @@ document.addEventListener('DOMContentLoaded', () => {
   if (btnKembali) {
     btnKembali.addEventListener('click', () => {
       document.getElementById('config-section').classList.add('d-none');
-      document.getElementById('dashboard-section').classList.remove('d-none');
+      
+      if(document.getElementById('welcome-header')) document.getElementById('welcome-header').classList.remove('d-none');
+      if(document.getElementById('main-nav-container')) document.getElementById('main-nav-container').classList.remove('d-none');
+
+      // Show whatever was active
+      if(navLog && navLog.checked) {
+         logSection.classList.remove('d-none');
+      } else {
+         dashboardSection.classList.remove('d-none');
+      }
       
       // Reset selections
       selGuru.value = "";
