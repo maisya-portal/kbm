@@ -271,6 +271,128 @@ document.addEventListener('DOMContentLoaded', () => {
      }, 50);
   }
 
+  // --- Log Presensi Logic ---
+  const navJadwal = document.getElementById('nav-jadwal');
+  const navLog = document.getElementById('nav-log');
+  const dashboardSection = document.getElementById('dashboard-section');
+  const logSection = document.getElementById('log-section');
+  const configSection = document.getElementById('config-section');
+  
+  const filterTanggalLog = document.getElementById('filter-tanggal-log');
+  const btnRefreshLog = document.getElementById('btn-refresh-log');
+  const tbodyLog = document.getElementById('body-log');
+
+  if (navJadwal && navLog) {
+    navJadwal.addEventListener('change', () => {
+      if(navJadwal.checked) {
+        dashboardSection.classList.remove('d-none');
+        logSection.classList.add('d-none');
+        configSection.classList.add('d-none');
+      }
+    });
+    navLog.addEventListener('change', () => {
+      if(navLog.checked) {
+        dashboardSection.classList.add('d-none');
+        logSection.classList.remove('d-none');
+        configSection.classList.add('d-none');
+        // Initialize date and fetch if empty
+        if(!filterTanggalLog.value) {
+           filterTanggalLog.value = new Date().toISOString().split('T')[0];
+           fetchLogKbm();
+        }
+      }
+    });
+  }
+
+  if (filterTanggalLog) filterTanggalLog.addEventListener('change', fetchLogKbm);
+  if (btnRefreshLog) btnRefreshLog.addEventListener('click', fetchLogKbm);
+
+  async function fetchLogKbm() {
+    if (!filterTanggalLog || !filterTanggalLog.value) return;
+    
+    tbodyLog.innerHTML = `<tr><td colspan="10" class="text-center py-5 text-muted"><div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div> Memuat log presensi...</td></tr>`;
+    showLoading(true);
+
+    try {
+      const payload = { action: 'get_log_kbm', tanggal: filterTanggalLog.value };
+      
+      const response = await fetch("https://script.google.com/macros/s/AKfycbxWjwlc6-mXpOimodZMFvQIC8hwdGRAz78PqnYIfQgSuXKkI9fUP4hXfC5x3QUIypiT/exec", {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload)
+      });
+      const res = await response.json();
+      
+      if(res.success) {
+        renderLogTable(res.data);
+      } else {
+        Swal.fire('Error', res.message || 'Gagal memuat log.', 'error');
+        tbodyLog.innerHTML = `<tr><td colspan="10" class="text-center py-5 text-danger">Gagal memuat log presensi.</td></tr>`;
+      }
+    } catch(e) {
+       console.error(e);
+       Swal.fire('Error', 'Terjadi kesalahan jaringan.', 'error');
+       tbodyLog.innerHTML = `<tr><td colspan="10" class="text-center py-5 text-danger">Terjadi kesalahan jaringan.</td></tr>`;
+    } finally {
+       showLoading(false);
+    }
+  }
+
+  function renderLogTable(data) {
+    if (!data || data.length === 0) {
+      tbodyLog.innerHTML = `<tr><td colspan="10" class="text-center py-5 text-muted"><div class="text-center mb-3"><i class="bi bi-calendar2-x display-4 text-light"></i></div>Tidak ada log presensi untuk tanggal ini.</td></tr>`;
+      return;
+    }
+
+    tbodyLog.innerHTML = '';
+    data.forEach((item, index) => {
+      let catatanSantriHtml = '';
+      if (item.catatan_santri && item.catatan_santri.length > 0) {
+         let lis = item.catatan_santri.map(c => {
+             let text = `<strong>${c.nama}</strong>: `;
+             if(c.nilai) text += `<span class="badge bg-success ms-1">Nilai: ${c.nilai}</span>`;
+             if(c.catatan) text += `<span class="text-muted ms-1 fst-italic">"${c.catatan}"</span>`;
+             return `<li>${text}</li>`;
+         }).join('');
+         catatanSantriHtml = `<ul class="mb-0 ps-3 small">${lis}</ul>`;
+      } else {
+         catatanSantriHtml = `<span class="text-muted small">-</span>`;
+      }
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="fw-medium">${item.no}</td>
+        <td><span class="badge bg-light text-dark border"><i class="bi bi-clock me-1"></i>${item.waktu}</span></td>
+        <td class="text-nowrap">${item.jam_ke}</td>
+        <td><span class="badge bg-primary">${item.kelas}</span></td>
+        <td class="fw-medium">${item.pelajaran}</td>
+        <td>${item.guru}</td>
+        <td><span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>${item.status_guru}</span></td>
+        <td class="text-center">
+           <span class="badge bg-success" title="Hadir">${item.hadir}</span> /
+           <span class="badge bg-warning text-dark" title="Izin">${item.izin}</span> /
+           <span class="badge bg-info text-dark" title="Sakit">${item.sakit}</span> /
+           <span class="badge bg-danger" title="Alfa">${item.alfa}</span>
+        </td>
+        <td>
+           <div class="fw-medium small">${item.materi}</div>
+           <div class="text-muted small fst-italic mt-1">${item.catatan_kelas}</div>
+        </td>
+        <td>
+           <button class="btn btn-sm btn-outline-secondary rounded-pill py-0 px-2" type="button" data-bs-toggle="collapse" data-bs-target="#detail-santri-${index}" aria-expanded="false" aria-controls="detail-santri-${index}">
+             <i class="bi bi-eye"></i> Detail
+           </button>
+           <div class="collapse mt-2" id="detail-santri-${index}">
+             <div class="card card-body p-2 border-0 bg-light shadow-sm">
+               ${catatanSantriHtml}
+             </div>
+           </div>
+        </td>
+      `;
+      tbodyLog.appendChild(tr);
+    });
+  }
+
   // Tombol Kembali
   const btnKembali = document.getElementById('btn-kembali-jadwal');
   if (btnKembali) {

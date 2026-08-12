@@ -60,6 +60,16 @@
 
   <main class="container py-4 mb-5 pb-5">
     
+    <!-- Main Navigation -->
+    <div id="main-nav-container" class="d-flex justify-content-center mb-4">
+      <div class="btn-group shadow-sm bg-white rounded-pill p-1" role="group">
+        <input type="radio" class="btn-check nav-radio" name="main-nav" id="nav-jadwal" autocomplete="off" checked>
+        <label class="btn btn-outline-primary border-0 rounded-pill px-4 fw-medium" for="nav-jadwal"><i class="bi bi-calendar-week me-2"></i>Jadwal</label>
+
+        <input type="radio" class="btn-check nav-radio" name="main-nav" id="nav-log" autocomplete="off">
+        <label class="btn btn-outline-primary border-0 rounded-pill px-4 fw-medium" for="nav-log"><i class="bi bi-journal-text me-2"></i>Log Presensi</label>
+      </div>
+    </div>
     <!-- Bagian 0: Dashboard Jadwal -->
     <section id="dashboard-section" class="mb-4">
       <div class="text-center mb-5 mt-3">
@@ -117,6 +127,51 @@
               <tr>
                 <td colspan="5" class="text-center py-5 text-muted">
                   <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div> Memuat jadwal...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Bagian: Log Presensi -->
+    <section id="log-section" class="d-none mb-4">
+      <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="card-header bg-white border-bottom py-3 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+          <h5 class="mb-0 fw-bold">Riwayat Log Presensi & Jurnal</h5>
+          
+          <div class="d-flex align-items-center gap-2">
+            <input type="date" id="filter-tanggal-log" class="form-control form-control-sm shadow-none border-1">
+            <button id="btn-refresh-log" class="btn btn-sm btn-primary rounded-pill px-3 shadow-sm">
+              <i class="bi bi-arrow-clockwise"></i>
+            </button>
+          </div>
+        </div>
+        
+        <div class="table-responsive">
+          <table class="table align-middle mb-0" id="tabel-log">
+            <thead class="table-light text-muted small">
+              <tr>
+                <th class="py-3 px-3 fw-medium border-bottom-0">No</th>
+                <th class="py-3 px-3 fw-medium border-bottom-0">Waktu</th>
+                <th class="py-3 px-3 fw-medium border-bottom-0 text-nowrap">Jam Ke</th>
+                <th class="py-3 px-3 fw-medium border-bottom-0 text-nowrap">Kelas</th>
+                <th class="py-3 px-3 fw-medium border-bottom-0">Pelajaran</th>
+                <th class="py-3 px-3 fw-medium border-bottom-0">Guru</th>
+                <th class="py-3 px-3 fw-medium border-bottom-0 text-nowrap">Status Guru</th>
+                <th class="py-3 px-3 fw-medium border-bottom-0 text-center text-nowrap">Santri (H/I/S/A)</th>
+                <th class="py-3 px-3 fw-medium border-bottom-0">Materi & Jurnal</th>
+                <th class="py-3 px-3 fw-medium border-bottom-0 text-nowrap">Detail Santri</th>
+              </tr>
+            </thead>
+            <tbody id="body-log">
+              <tr>
+                <td colspan="10" class="text-center py-5 text-muted">
+                  <div class="text-center mb-3">
+                    <i class="bi bi-calendar2-x display-4 text-light"></i>
+                  </div>
+                  Silakan pilih tanggal untuk melihat log.
                 </td>
               </tr>
             </tbody>
