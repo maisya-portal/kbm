@@ -1,4 +1,4 @@
-const CACHE_NAME = 'presensi-kbm-v10';
+const CACHE_NAME = 'presensi-kbm-v11';
 const urlsToCache = [
   './',
   './index.html',
