@@ -219,18 +219,6 @@ document.addEventListener('DOMContentLoaded', () => {
       const mapelObj = allMapel.find(m => m.ID_Mapel === j.ID_Mapel);
       const namaMapel = mapelObj ? mapelObj.Nama_Mapel : j.ID_Mapel;
       
-      let badgeHtml = '';
-      let idJ = j.ID_Jadwal || j["ID Jadwal"];
-      if (activeJadwalIds.map(String).includes(String(idJ))) {
-          badgeHtml = `<div class="mt-1"><span class="badge bg-success rounded-pill shadow-sm" style="animation: pulse 1.5s infinite;">
-            <i class="bi bi-broadcast"></i> Sedang Mengajar
-          </span></div>`;
-      } else {
-          badgeHtml = `<div class="mt-1"><span class="badge bg-secondary text-light rounded-pill shadow-sm">
-            <i class="bi bi-dash-circle"></i> Belum mengisi
-          </span></div>`;
-      }
-
       // We pass the required data in data- attributes so click can handle it
       const tr = document.createElement('tr');
       tr.innerHTML = `
@@ -238,7 +226,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <td class="py-3 px-4"><span class="badge bg-light text-secondary border border-secondary-subtle">${jamText}</span></td>
         <td class="py-3 px-4 fw-medium text-primary">${j.Kelas || '-'}</td>
         <td class="py-3 px-4">${namaMapel || '-'}</td>
-        <td class="py-3 px-4 text-muted">${namaGuru || '-'}${badgeHtml}</td>
+        <td class="py-3 px-4 text-muted">${namaGuru || '-'}</td>
       `;
       
       tr.addEventListener('click', () => {
@@ -366,7 +354,15 @@ document.addEventListener('DOMContentLoaded', () => {
       if (item.catatan_santri && item.catatan_santri.length > 0) {
          let lis = item.catatan_santri.map(c => {
              let text = `<strong>${c.nama}</strong>: `;
-             if(c.nilai) text += `<span class="badge bg-success ms-1">Nilai: ${c.nilai}</span>`;
+             let stColor = 'secondary';
+             let stStr = String(c.status || 'Hadir').toLowerCase();
+             if(stStr.includes('hadir')) stColor = 'success';
+             else if(stStr.includes('izin')) stColor = 'warning text-dark';
+             else if(stStr.includes('sakit')) stColor = 'info text-dark';
+             else if(stStr.includes('alfa')) stColor = 'danger';
+             
+             text += `<span class="badge bg-${stColor} ms-1">${c.status || 'Hadir'}</span>`;
+             if(c.nilai) text += `<span class="badge bg-primary ms-1">Nilai: ${c.nilai}</span>`;
              if(c.catatan) text += `<span class="text-muted ms-1 fst-italic">"${c.catatan}"</span>`;
              return `<li class="mb-2 pb-2 border-bottom">${text}</li>`;
          }).join('');
