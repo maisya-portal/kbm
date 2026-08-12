@@ -365,9 +365,13 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       let badgeKeluar = '';
-      if (item.status_isi && item.jam_ke !== '-') {
-         if (item.over_mins > 0) {
-            badgeKeluar = `<div class="mt-1"><span class="badge bg-warning text-dark rounded-pill" style="font-size: 0.7rem;">Lebih ${item.over_mins} mnt</span></div>`;
+      if (item.status_isi) {
+         if (item.jam_ke !== '-') {
+            if (item.over_mins > 0) {
+               badgeKeluar = `<div class="mt-1"><span class="badge bg-warning text-dark rounded-pill" style="font-size: 0.7rem;">Lebih ${item.over_mins} mnt</span></div>`;
+            }
+         } else {
+            badgeKeluar = `<div class="mt-1"><span class="badge bg-danger rounded-pill" style="font-size: 0.7rem;">Tidak mengisi</span></div>`;
          }
       }
       
