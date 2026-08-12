@@ -350,30 +350,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     tbodyLog.innerHTML = '';
     data.forEach((item, index) => {
-      let catatanSantriHtml = '';
-      if (item.catatan_santri && item.catatan_santri.length > 0) {
-         let lis = item.catatan_santri.map(c => {
-             let text = `<strong>${c.nama}</strong>: `;
-             let stColor = 'secondary';
-             let stStr = String(c.status || 'Hadir').toLowerCase();
-             if(stStr.includes('hadir')) stColor = 'success';
-             else if(stStr.includes('izin')) stColor = 'warning text-dark';
-             else if(stStr.includes('sakit')) stColor = 'info text-dark';
-             else if(stStr.includes('alfa')) stColor = 'danger';
-             
-             text += `<span class="badge bg-${stColor} ms-1">${c.status || 'Hadir'}</span>`;
-             if(c.nilai) text += `<span class="badge bg-primary ms-1">Nilai: ${c.nilai}</span>`;
-             if(c.catatan) text += `<span class="text-muted ms-1 fst-italic">"${c.catatan}"</span>`;
-             return `<li class="mb-2 pb-2 border-bottom">${text}</li>`;
-         }).join('');
-         catatanSantriHtml = `<ul class="list-unstyled mb-0">${lis}</ul>`;
-      } else {
-         catatanSantriHtml = `<div class="text-center text-muted py-3">Tidak ada catatan khusus untuk santri di sesi ini.</div>`;
-      }
-      
       window.santriDetailsCache = window.santriDetailsCache || {};
-      if (item.status_isi) {
-         window.santriDetailsCache[item.id_jurnal] = catatanSantriHtml;
+      if (item.status_isi && item.catatan_santri) {
+         window.santriDetailsCache[item.id_jurnal] = item.catatan_santri;
       }
 
       let badgeMasuk = '';
@@ -414,11 +393,11 @@ document.addEventListener('DOMContentLoaded', () => {
         <td class="fw-medium">${item.pelajaran}</td>
         <td>${item.guru}</td>
         <td>${statusHtml}</td>
-        <td class="text-center" style="cursor: pointer;" onclick="showDetailSantriModal('${item.id_jurnal}')" title="Klik untuk lihat detail santri">
-           <span class="badge bg-success" title="Hadir">${item.hadir}</span> /
-           <span class="badge bg-warning text-dark" title="Izin">${item.izin}</span> /
-           <span class="badge bg-info text-dark" title="Sakit">${item.sakit}</span> /
-           <span class="badge bg-danger" title="Alfa">${item.alfa}</span>
+        <td class="text-center">
+           <span class="badge bg-success" style="cursor: pointer;" title="Hadir" onclick="showDetailSantriModal('${item.id_jurnal}', 'Hadir')">${item.hadir}</span> /
+           <span class="badge bg-warning text-dark" style="cursor: pointer;" title="Izin" onclick="showDetailSantriModal('${item.id_jurnal}', 'Izin')">${item.izin}</span> /
+           <span class="badge bg-info text-dark" style="cursor: pointer;" title="Sakit" onclick="showDetailSantriModal('${item.id_jurnal}', 'Sakit')">${item.sakit}</span> /
+           <span class="badge bg-danger" style="cursor: pointer;" title="Alfa" onclick="showDetailSantriModal('${item.id_jurnal}', 'Alfa')">${item.alfa}</span>
         </td>
         <td>
            <div class="fw-medium small">${item.materi}</div>
@@ -458,11 +437,44 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  window.showDetailSantriModal = function(idJurnal) {
+  window.showDetailSantriModal = function(idJurnal, filterStatus) {
       if (!idJurnal || idJurnal === 'undefined') return;
-      const html = window.santriDetailsCache[idJurnal] || '<div class="text-center py-3 text-muted">Data tidak ditemukan.</div>';
+      
+      const santriData = window.santriDetailsCache ? window.santriDetailsCache[idJurnal] : null;
+      let html = '<div class="text-center py-3 text-muted">Data tidak ditemukan.</div>';
+      let modalTitle = 'Detail Catatan Santri';
+      
+      if (santriData && santriData.length > 0) {
+         const filtered = santriData.filter(c => String(c.status || 'Hadir').toLowerCase().includes(filterStatus.toLowerCase()));
+         if (filtered.length > 0) {
+            let lis = filtered.map(c => {
+                let text = `<strong>${c.nama}</strong>: `;
+                let stColor = 'secondary';
+                let stStr = String(c.status || 'Hadir').toLowerCase();
+                if(stStr.includes('hadir')) stColor = 'success';
+                else if(stStr.includes('izin')) stColor = 'warning text-dark';
+                else if(stStr.includes('sakit')) stColor = 'info text-dark';
+                else if(stStr.includes('alfa')) stColor = 'danger';
+                
+                text += `<span class="badge bg-${stColor} ms-1">${c.status || 'Hadir'}</span>`;
+                if(c.nilai) text += `<span class="badge bg-primary ms-1">Nilai: ${c.nilai}</span>`;
+                if(c.catatan) text += `<span class="text-muted ms-1 fst-italic">"${c.catatan}"</span>`;
+                return `<li class="mb-2 pb-2 border-bottom">${text}</li>`;
+            }).join('');
+            html = `<ul class="list-unstyled mb-0">${lis}</ul>`;
+            modalTitle = `Detail Santri : ${filterStatus} (${filtered.length} Santri)`;
+         } else {
+            html = `<div class="text-center py-3 text-muted">Tidak ada santri dengan status ${filterStatus}.</div>`;
+            modalTitle = `Detail Santri : ${filterStatus}`;
+         }
+      }
+      
       const body = document.getElementById('modal-detail-santri-body');
       if (body) body.innerHTML = html;
+      
+      const titleEl = document.getElementById('modal-detail-santri-title');
+      if (titleEl) titleEl.innerText = modalTitle;
+      
       const myModal = new bootstrap.Modal(document.getElementById('modal-detail-santri'));
       myModal.show();
   };
