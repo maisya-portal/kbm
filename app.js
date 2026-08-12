@@ -408,7 +408,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <td class="fw-medium">${item.pelajaran}</td>
         <td>${item.guru}</td>
         <td>${statusHtml}</td>
-        <td class="text-center">
+        <td class="text-center" style="cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#detail-santri-${index}" title="Klik untuk lihat detail">
            <span class="badge bg-success" title="Hadir">${item.hadir}</span> /
            <span class="badge bg-warning text-dark" title="Izin">${item.izin}</span> /
            <span class="badge bg-info text-dark" title="Sakit">${item.sakit}</span> /
@@ -429,12 +429,28 @@ document.addEventListener('DOMContentLoaded', () => {
            </div>` : '-'}
         </td>
         <td>
-           ${item.status_isi ? `<button class="btn btn-sm btn-outline-danger rounded-pill py-0 px-2 btn-delete-log" data-id="${item.id_jurnal}" title="Hapus Log">
-             <i class="bi bi-trash"></i>
-           </button>` : '-'}
+           ${item.status_isi ? `<div class="d-flex gap-1 justify-content-center">
+             <button class="btn btn-sm btn-outline-primary rounded-pill py-0 px-2 btn-edit-log" data-id="${item.id_jurnal}" title="Edit Log">
+               <i class="bi bi-pencil"></i>
+             </button>
+             <button class="btn btn-sm btn-outline-danger rounded-pill py-0 px-2 btn-delete-log" data-id="${item.id_jurnal}" title="Hapus Log">
+               <i class="bi bi-trash"></i>
+             </button>
+           </div>` : '-'}
         </td>
       `;
       tbodyLog.appendChild(tr);
+    });
+
+    // Bind edit buttons
+    document.querySelectorAll('.btn-edit-log').forEach(btn => {
+       btn.addEventListener('click', (e) => {
+          Swal.fire({
+            title: 'Info Edit',
+            text: 'Untuk saat ini, jika ada kesalahan input KBM, silakan Hapus log ini menggunakan PIN Admin, kemudian isi ulang presensi.',
+            icon: 'info'
+          });
+       });
     });
 
     // Bind delete buttons
