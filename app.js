@@ -221,7 +221,7 @@ document.addEventListener('DOMContentLoaded', () => {
       
       let badgeHtml = '';
       let idJ = j.ID_Jadwal || j["ID Jadwal"];
-      if (activeJadwalIds.includes(idJ)) {
+      if (activeJadwalIds.map(String).includes(String(idJ))) {
           badgeHtml = `<div class="mt-1"><span class="badge bg-success rounded-pill shadow-sm" style="animation: pulse 1.5s infinite;">
             <i class="bi bi-broadcast"></i> Sedang Mengajar
           </span></div>`;
