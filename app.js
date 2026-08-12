@@ -390,8 +390,65 @@ document.addEventListener('DOMContentLoaded', () => {
              </div>
            </div>
         </td>
+        <td>
+           <button class="btn btn-sm btn-outline-danger rounded-pill py-0 px-2 btn-delete-log" data-id="${item.id_jurnal}" title="Hapus Log">
+             <i class="bi bi-trash"></i>
+           </button>
+        </td>
       `;
       tbodyLog.appendChild(tr);
+    });
+
+    // Bind delete buttons
+    document.querySelectorAll('.btn-delete-log').forEach(btn => {
+       btn.addEventListener('click', (e) => {
+          const idJurnal = e.currentTarget.getAttribute('data-id');
+          confirmDeleteLog(idJurnal);
+       });
+    });
+  }
+
+  function confirmDeleteLog(idJurnal) {
+    Swal.fire({
+      title: 'Hapus Log?',
+      text: 'Masukkan PIN Admin untuk menghapus log presensi dan jurnal ini.',
+      input: 'password',
+      inputAttributes: {
+        autocapitalize: 'off',
+        autocorrect: 'off'
+      },
+      showCancelButton: true,
+      confirmButtonText: 'Hapus',
+      cancelButtonText: 'Batal',
+      showLoaderOnConfirm: true,
+      preConfirm: async (pin) => {
+        if (pin !== 'admin991588') {
+          Swal.showValidationMessage('PIN salah!');
+          return false;
+        }
+        
+        try {
+          const payload = { action: 'delete_log_kbm', id_jurnal: idJurnal };
+          const response = await fetch("https://script.google.com/macros/s/AKfycbxWjwlc6-mXpOimodZMFvQIC8hwdGRAz78PqnYIfQgSuXKkI9fUP4hXfC5x3QUIypiT/exec", {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify(payload)
+          });
+          const res = await response.json();
+          if (!res.success) {
+            throw new Error(res.message || 'Gagal menghapus log.');
+          }
+          return res;
+        } catch (error) {
+          Swal.showValidationMessage(`Request failed: ${error}`);
+        }
+      },
+      allowOutsideClick: () => !Swal.isLoading()
+    }).then((result) => {
+      if (result.isConfirmed) {
+        Swal.fire('Terhapus!', 'Log presensi berhasil dihapus.', 'success');
+        fetchLogKbm(); // Refresh table
+      }
     });
   }
 
