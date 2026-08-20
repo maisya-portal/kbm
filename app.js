@@ -551,6 +551,126 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Modal Rincian Santri (Hadir / Izin / Sakit / Alfa)
+  window.showDetailSantriModal = function(idJurnal, selectedFilter) {
+    if (!idJurnal) {
+      Swal.fire('Info', 'Sesi KBM ini belum diisi oleh guru pengajar.', 'info');
+      return;
+    }
+
+    const item = (currentRawLogData || []).find(d => d.id_jurnal === idJurnal || d.id_jadwal === idJurnal);
+    if (!item || !item.status_isi) {
+      Swal.fire('Info', 'Data kehadiran belum diisi pada sesi KBM ini.', 'info');
+      return;
+    }
+
+    const santriList = item.catatan_santri || (window.santriDetailsCache && window.santriDetailsCache[idJurnal]) || [];
+    if (santriList.length === 0) {
+      Swal.fire('Info', 'Tidak ada data rincian santri untuk sesi ini.', 'info');
+      return;
+    }
+
+    const modalTitle = document.getElementById('modal-detail-santri-title');
+    const modalBody = document.getElementById('modal-detail-santri-body');
+    if (!modalBody) return;
+
+    let currentFilter = selectedFilter || 'Semua';
+
+    function renderDetailContent() {
+      const getBadge = (st) => {
+        st = String(st || 'Hadir').toLowerCase();
+        if (st.includes('hadir')) return '<span class="badge bg-success">Hadir</span>';
+        if (st.includes('izin')) return '<span class="badge bg-warning text-dark">Izin</span>';
+        if (st.includes('sakit')) return '<span class="badge bg-info text-dark">Sakit</span>';
+        if (st.includes('alfa')) return '<span class="badge bg-danger">Alfa</span>';
+        return `<span class="badge bg-secondary">${st}</span>`;
+      };
+
+      let filtered = santriList;
+      if (currentFilter !== 'Semua') {
+        filtered = santriList.filter(s => String(s.status || '').toLowerCase().includes(currentFilter.toLowerCase()));
+      }
+
+      if (modalTitle) {
+        modalTitle.innerHTML = `<i class="bi bi-people-fill text-primary me-2"></i>Rincian Kehadiran Santri`;
+      }
+
+      let subHeaderHtml = `
+        <div class="p-3 bg-light rounded-3 mb-3 border">
+          <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
+            <div>
+              <div class="fw-bold text-dark fs-6">${item.pelajaran} - Kelas ${item.kelas}</div>
+              <div class="text-muted small">Guru: <span class="fw-medium text-dark">${item.guru}</span> | Waktu: <span class="fw-medium text-dark">${item.waktu || '-'}</span> (Tgl: ${item.tanggal || '-'})</div>
+            </div>
+            <div class="btn-group btn-group-sm flex-wrap shadow-sm rounded-pill p-1 bg-white border" role="group">
+              <button type="button" class="btn btn-sm ${currentFilter === 'Semua' ? 'btn-primary' : 'btn-light'} rounded-pill px-2 py-0 fw-medium btn-filter-detail" data-filter="Semua">Semua (${santriList.length})</button>
+              <button type="button" class="btn btn-sm ${currentFilter === 'Hadir' ? 'btn-success' : 'btn-light'} rounded-pill px-2 py-0 fw-medium btn-filter-detail" data-filter="Hadir">Hadir (${item.hadir || 0})</button>
+              <button type="button" class="btn btn-sm ${currentFilter === 'Izin' ? 'btn-warning text-dark' : 'btn-light'} rounded-pill px-2 py-0 fw-medium btn-filter-detail" data-filter="Izin">Izin (${item.izin || 0})</button>
+              <button type="button" class="btn btn-sm ${currentFilter === 'Sakit' ? 'btn-info text-dark' : 'btn-light'} rounded-pill px-2 py-0 fw-medium btn-filter-detail" data-filter="Sakit">Sakit (${item.sakit || 0})</button>
+              <button type="button" class="btn btn-sm ${currentFilter === 'Alfa' ? 'btn-danger' : 'btn-light'} rounded-pill px-2 py-0 fw-medium btn-filter-detail" data-filter="Alfa">Alfa (${item.alfa || 0})</button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      let tableHtml = '';
+      if (filtered.length === 0) {
+        tableHtml = `
+          <div class="text-center py-4 text-muted">
+            <i class="bi bi-person-x display-6 text-secondary d-block mb-2"></i>
+            Tidak ada santri dengan status <b>${currentFilter}</b> pada sesi ini.
+          </div>
+        `;
+      } else {
+        let rows = filtered.map((s, idx) => `
+          <tr>
+            <td class="text-muted small text-center" style="width: 40px;">${idx + 1}</td>
+            <td class="fw-medium">${s.nama || s.nis || '-'}</td>
+            <td class="text-center" style="width: 100px;">${getBadge(s.status)}</td>
+            <td class="text-center fw-semibold text-primary" style="width: 80px;">${(s.nilai !== undefined && s.nilai !== null && s.nilai !== '') ? s.nilai : '-'}</td>
+            <td class="text-muted small">${s.catatan || '-'}</td>
+          </tr>
+        `).join('');
+
+        tableHtml = `
+          <div class="table-responsive" style="max-height: 380px;">
+            <table class="table table-sm table-hover align-middle mb-0">
+              <thead class="table-light text-muted small position-sticky top-0">
+                <tr>
+                  <th class="text-center" style="width: 40px;">No</th>
+                  <th>Nama Santri</th>
+                  <th class="text-center" style="width: 100px;">Status</th>
+                  <th class="text-center" style="width: 80px;">Nilai</th>
+                  <th>Catatan</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rows}
+              </tbody>
+            </table>
+          </div>
+        `;
+      }
+
+      modalBody.innerHTML = subHeaderHtml + tableHtml;
+
+      modalBody.querySelectorAll('.btn-filter-detail').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          currentFilter = e.currentTarget.getAttribute('data-filter');
+          renderDetailContent();
+        });
+      });
+    }
+
+    renderDetailContent();
+
+    const modalEl = document.getElementById('modal-detail-santri');
+    if (modalEl) {
+      const bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+      bsModal.show();
+    }
+  };
+
   function openEditLogModal(idJurnal) {
     const item = currentRawLogData.find(d => d.id_jurnal === idJurnal);
     if (!item) {
