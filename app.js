@@ -277,8 +277,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // --- Log Presensi Logic ---
   const navJadwal = document.getElementById('nav-jadwal');
-  // --- Log Presensi Logic ---
-  const navJadwal = document.getElementById('nav-jadwal');
   const navLog = document.getElementById('nav-log');
   const dashboardSection = document.getElementById('dashboard-section');
   const logSection = document.getElementById('log-section');
