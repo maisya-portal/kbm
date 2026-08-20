@@ -18,12 +18,12 @@
   <link rel="stylesheet" href="style.css">
   
   <!-- PWA Manifest -->
-  <link rel="manifest" href="manifest.json?v=2">
-  <meta name="theme-color" content="#87CEEB">
+  <link rel="manifest" href="manifest.json?v=3">
+  <meta name="theme-color" content="#0284c7">
   
   <!-- Favicon -->
-  <link rel="icon" type="image/png" sizes="192x192" href="./icon.png">
-  <link rel="apple-touch-icon" href="./icon.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="./icon.png?v=3">
+  <link rel="apple-touch-icon" href="./icon.png?v=3">
 </head>
 <body class="bg-light-subtle">
 
@@ -140,14 +140,60 @@
 
     <!-- Bagian: Log Presensi -->
     <section id="log-section" class="d-none mb-4">
+      <!-- Stat Cards Summary Log -->
+      <div class="row g-3 mb-3" id="log-stat-summary">
+        <div class="col-6 col-md-3">
+          <div class="card border-0 shadow-sm rounded-4 p-3 bg-white text-center h-100">
+            <div class="text-muted small fw-medium mb-1"><i class="bi bi-calendar-event text-primary me-1"></i> Total Jadwal</div>
+            <div class="fs-4 fw-bold text-dark" id="stat-total-jadwal">0</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="card border-0 shadow-sm rounded-4 p-3 bg-white text-center h-100">
+            <div class="text-muted small fw-medium mb-1"><i class="bi bi-check-circle-fill text-success me-1"></i> Terlaksana</div>
+            <div class="fs-4 fw-bold text-success" id="stat-terlaksana">0</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="card border-0 shadow-sm rounded-4 p-3 bg-white text-center h-100">
+            <div class="text-muted small fw-medium mb-1"><i class="bi bi-clock-history text-warning me-1"></i> Belum Terisi</div>
+            <div class="fs-4 fw-bold text-warning" id="stat-belum-terisi">0</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="card border-0 shadow-sm rounded-4 p-3 bg-white text-center h-100">
+            <div class="text-muted small fw-medium mb-1"><i class="bi bi-people-fill text-info me-1"></i> % Santri Hadir</div>
+            <div class="fs-4 fw-bold text-info" id="stat-persen-hadir">0%</div>
+          </div>
+        </div>
+      </div>
+
       <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
-        <div class="card-header bg-white border-bottom py-3 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
-          <h5 class="mb-0 fw-bold">Riwayat Log Presensi & Jurnal</h5>
+        <div class="card-header bg-white border-bottom py-3 d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
+          <h5 class="mb-0 fw-bold"><i class="bi bi-clock-history text-primary me-2"></i>Riwayat Log Presensi & Jurnal</h5>
           
-          <div class="d-flex align-items-center gap-2">
-            <input type="date" id="filter-tanggal-log" class="form-control form-control-sm shadow-none border-1">
-            <button id="btn-refresh-log" class="btn btn-sm btn-primary rounded-pill px-3 shadow-sm">
+          <div class="d-flex flex-wrap align-items-center gap-2">
+            <div class="d-flex align-items-center gap-1">
+              <span class="small text-muted fw-medium">Tgl:</span>
+              <input type="date" id="filter-tanggal-log" class="form-control form-control-sm shadow-none border-1" style="width: 140px;">
+            </div>
+            <select id="filter-kelas-log" class="form-select form-select-sm bg-light shadow-none w-auto border-0">
+              <option value="Semua">Semua Kelas</option>
+            </select>
+            <select id="filter-status-log" class="form-select form-select-sm bg-light shadow-none w-auto border-0">
+              <option value="Semua">Semua Status</option>
+              <option value="Sudah Isi">Sudah Mengisi</option>
+              <option value="Belum Isi">Belum Mengisi</option>
+            </select>
+            <div class="input-group input-group-sm" style="max-width: 180px;">
+              <span class="input-group-text bg-light border-0"><i class="bi bi-search"></i></span>
+              <input type="text" id="filter-search-log" class="form-control bg-light border-0" placeholder="Cari guru/mapel...">
+            </div>
+            <button id="btn-refresh-log" class="btn btn-sm btn-primary rounded-pill px-3 shadow-sm" title="Muat Ulang Log">
               <i class="bi bi-arrow-clockwise"></i>
+            </button>
+            <button id="btn-print-log" class="btn btn-sm btn-outline-secondary rounded-pill px-3 shadow-sm" title="Cetak Rekap Log">
+              <i class="bi bi-printer"></i>
             </button>
           </div>
         </div>
@@ -198,55 +244,56 @@
         <h5 class="card-title fw-bold mb-4"><i class="bi bi-funnel me-2 text-primary"></i>Konfigurasi KBM</h5>
         
         <div class="row g-3">
-          <div class="col-md-6 col-lg-3">
-            <label class="form-label fw-medium text-muted small">Pilih Guru</label>
-            <select class="form-select form-select-lg shadow-none" id="select-guru">
-              <option value="" selected disabled>-- Nama Guru --</option>
-              <option value="ID_G01">Ustadz Ahmad</option>
-              <option value="ID_G02">Ustadz Budi</option>
-              <!-- Mock Data -->
+          
+          <!-- Dropdown Guru -->
+          <div class="col-12 col-md-6 col-lg-3">
+            <label class="form-label fw-medium text-muted small">Nama Pengajar / Guru</label>
+            <select class="form-select bg-light" id="select-guru">
+              <option value="" selected disabled>-- Memuat Data... --</option>
             </select>
           </div>
-          <div class="col-md-6 col-lg-3">
+
+          <!-- Dropdown Mapel -->
+          <div class="col-12 col-md-6 col-lg-3">
             <label class="form-label fw-medium text-muted small">Mata Pelajaran</label>
-            <select class="form-select form-select-lg shadow-none" id="select-mapel" disabled>
-              <option value="" selected disabled>-- Mata Pelajaran --</option>
-              <option value="M01">Aqidah Akhlak</option>
-              <option value="M02">Fikih</option>
-              <option value="M03">Bahasa Arab</option>
+            <select class="form-select bg-light" id="select-mapel" disabled>
+              <option value="" selected disabled>-- Pilih Pengajar Dulu --</option>
             </select>
           </div>
-          <div class="col-md-6 col-lg-3">
+
+          <!-- Dropdown Kelas -->
+          <div class="col-12 col-md-6 col-lg-3">
             <label class="form-label fw-medium text-muted small">Kelas</label>
-            <select class="form-select form-select-lg shadow-none" id="select-kelas" disabled>
-              <option value="" selected disabled>-- Kelas --</option>
-              <option value="K01">VII A</option>
-              <option value="K02">VII B</option>
-              <option value="K03">VIII A</option>
+            <select class="form-select bg-light" id="select-kelas" disabled>
+              <option value="" selected disabled>-- Pilih Mapel Dulu --</option>
             </select>
           </div>
-          <div class="col-md-6 col-lg-3">
-            <label class="form-label fw-medium text-muted small">Jam Pelajaran</label>
-            <select class="form-select form-select-lg shadow-none" id="select-jam" disabled>
-              <option value="" selected disabled>-- Jam Ke --</option>
-              <option value="1-2">Jam 1 & 2</option>
-              <option value="3-4">Jam 3 & 4</option>
-              <option value="5-6">Jam 5 & 6</option>
+
+          <!-- Dropdown Jam Pelajaran -->
+          <div class="col-12 col-md-6 col-lg-3">
+            <label class="form-label fw-medium text-muted small">Waktu / Jam Pelajaran</label>
+            <select class="form-select bg-light" id="select-jam" disabled>
+              <option value="" selected disabled>-- Pilih Kelas Dulu --</option>
             </select>
           </div>
+
         </div>
-        
-        <div id="clock-actions" class="mt-4 p-3 bg-primary-subtle rounded-3 border border-primary-subtle d-none d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3">
-          <div class="text-primary fw-medium"><i class="bi bi-info-circle me-2"></i>Silakan Jam Masuk untuk mengakses Mata Pelajaran.</div>
-          <button id="btn-jam-masuk" class="btn btn-primary px-4 fw-bold rounded-pill shadow-sm">
+
+        <!-- Tombol Jam Masuk Interaktif -->
+        <div id="clock-actions" class="mt-4 p-3 bg-light rounded-3 d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
+          <div class="d-flex align-items-center text-muted small">
+            <i class="bi bi-info-circle-fill text-primary me-2 fs-5"></i>
+            <span>Silakan <b>Jam Masuk</b> untuk mengakses Mata Pelajaran.</span>
+          </div>
+          <button id="btn-jam-masuk" class="btn btn-primary px-4 py-2 fw-semibold rounded-pill shadow-sm">
             <i class="bi bi-box-arrow-in-right me-2"></i>Jam Masuk
           </button>
         </div>
-        
-        <!-- Status Mengajar (Muncul setelah Jam Masuk) -->
-        <div id="status-mengajar" class="mt-4 p-3 bg-light rounded-3 border border-light-subtle d-none animate-fade-in">
-          <div class="d-flex justify-content-between align-items-center mb-2">
-            <span class="fw-medium text-muted small"><i class="bi bi-clock-history me-1"></i>Jam Masuk: <strong id="waktu-jam-masuk" class="text-dark">--:--</strong></span>
+
+        <!-- Progress Bar Status Mengajar -->
+        <div id="status-mengajar" class="mt-4 d-none">
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <span class="small text-muted">Sesi Mengajar: <strong id="waktu-jam-masuk" class="text-dark">--:--</strong></span>
             <span id="sisa-waktu-text" class="fw-bold text-primary small">-- menit lagi</span>
           </div>
           <div class="progress" style="height: 8px;">
@@ -281,23 +328,24 @@
           </div>
           <div class="row g-3">
             <div class="col-12">
-              <label class="form-label fw-medium text-muted small">Materi Pokok / Bahasan Topik</label>
+              <label class="form-label fw-medium text-muted small">Materi Pokok / Bahasan Topik <span class="text-danger">*</span></label>
               <input type="text" class="form-control form-control-lg bg-light" id="input-materi" placeholder="Cth: Bab 1 - Rukun Iman" required>
             </div>
           </div>
         </div>
       </section>
 
-      <!-- Bagian 3: Presensi Santri -->
+      <!-- Bagian 3: Presensi Santri (Fokus Kehadiran Santri) -->
       <section class="card border-0 shadow-sm rounded-4 mb-4">
         <div class="card-header bg-white border-0 pt-4 pb-0 px-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
           <h5 class="card-title fw-bold mb-0"><i class="bi bi-people me-2 text-info"></i>Daftar Santri</h5>
-          <div class="d-flex align-items-center gap-3">
-            <div class="input-group input-group-sm" style="width: 180px;">
-              <span class="input-group-text bg-light border-end-0">Set Nilai Semua</span>
-              <input type="number" id="input-default-nilai" class="form-control text-center" placeholder="0-100" min="0" max="100">
-            </div>
-            <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-2" id="santri-count">0 Santri</span>
+          <div class="d-flex align-items-center gap-2">
+            <!-- Tombol Khusus Penilaian KBM / Nilai Harian -->
+            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-semibold shadow-sm" id="btn-open-modal-nilai">
+              <i class="bi bi-award me-1"></i> Penilaian KBM / Nilai Harian
+              <span class="badge bg-primary-subtle text-primary ms-1" id="badge-nilai-status">Opsional</span>
+            </button>
+            <span class="badge bg-primary text-white rounded-pill px-3 py-2" id="santri-count">0 Santri</span>
           </div>
         </div>
         <div class="card-body p-0 mt-3">
@@ -306,9 +354,8 @@
               <thead class="table-light text-muted">
                 <tr>
                   <th class="ps-4 fw-medium">Nama Santri</th>
-                  <th class="text-center fw-medium" width="300">Kehadiran</th>
-                  <th class="text-center fw-medium" width="120">Nilai</th>
-                  <th class="fw-medium">Catatan</th>
+                  <th class="text-center fw-medium" width="320">Kehadiran</th>
+                  <th class="fw-medium">Catatan Santri</th>
                 </tr>
               </thead>
               <tbody id="santri-tbody">
@@ -324,17 +371,17 @@
         <div class="card-body p-4">
           <div class="row g-3">
             <div class="col-12">
-              <label class="form-label fw-medium text-muted small">Catatan Kejadian / Evaluasi (Opsional)</label>
+              <label class="form-label fw-medium text-muted small">Catatan Kejadian / Evaluasi KBM (Opsional)</label>
               <textarea class="form-control bg-light" id="input-catatan" rows="3" placeholder="Cth: Kelas kondusif, 2 santri remedial..."></textarea>
             </div>
           </div>
         </div>
       </section>
       
-      <!-- Tombol Aksi Simpan -->
+      <!-- Tombol Aksi Simpan Presensi & Jurnal -->
       <div class="sticky-action-bar shadow-lg rounded-4 p-3 bg-white d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4 border">
         <div class="text-muted small">
-          <i class="bi bi-info-circle me-1"></i> Pastikan semua data benar sebelum menyimpan.
+          <i class="bi bi-info-circle me-1"></i> Pastikan semua data presensi santri dan jurnal telah sesuai.
         </div>
         <div class="d-flex gap-2">
           <button id="btn-cancel-kbm" class="btn btn-light px-4 py-2 rounded-pill fw-medium border shadow-sm">
@@ -351,6 +398,133 @@
     </div> <!-- End config-section -->
 
   </main>
+
+  <!-- Modal Penilaian KBM / Nilai Harian Khusus -->
+  <div class="modal fade" id="modalNilaiKBM" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+      <div class="modal-content border-0 rounded-4 shadow-lg">
+        <div class="modal-header bg-light border-0 py-3">
+          <h5 class="modal-title fw-bold text-primary">
+            <i class="bi bi-award me-2"></i>Penilaian KBM & Nilai Harian
+          </h5>
+          <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4">
+          <div class="alert alert-info border-0 rounded-3 small mb-3">
+            <i class="bi bi-info-circle me-1"></i> Nilai yang diinput di sini akan otomatis terhubung ke menu <b>Nilai Harian</b> di Portal Pengajaran, Rapor Santri, dan Buku Penghubung Digital.
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label class="form-label small fw-semibold text-muted">Tipe Penilaian</label>
+              <select id="modal-nilai-tipe" class="form-select form-select-sm">
+                <option value="Tugas">Tugas Harian</option>
+                <option value="Formatif">Formatif / Kuis</option>
+                <option value="Praktik">Praktik / Setoran</option>
+                <option value="UH">Ulangan Harian (UH)</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-semibold text-muted">Materi / KD Penilaian</label>
+              <input type="text" id="modal-nilai-materi" class="form-control form-control-sm" placeholder="Topik penilaian...">
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-between align-items-center mb-3 p-2 bg-light rounded-3">
+            <span class="small fw-semibold text-muted">Isi Cepat Semua Santri:</span>
+            <div class="d-flex align-items-center gap-2">
+              <input type="number" id="modal-nilai-default" class="form-control form-control-sm text-center" placeholder="0-100" min="0" max="100" style="width: 90px;">
+              <button type="button" class="btn btn-sm btn-primary rounded-pill px-3" id="btn-modal-apply-all-nilai">
+                Terapkan Semua
+              </button>
+            </div>
+          </div>
+
+          <div class="table-responsive" style="max-height: 350px;">
+            <table class="table table-sm align-middle table-hover mb-0">
+              <thead class="table-light text-muted small position-sticky top-0">
+                <tr>
+                  <th width="40">No</th>
+                  <th>Nama Santri</th>
+                  <th width="110" class="text-center">Nilai (0-100)</th>
+                  <th>Catatan Penilaian (Opsional)</th>
+                </tr>
+              </thead>
+              <tbody id="modal-nilai-tbody">
+                <!-- Populated via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="modal-footer border-0 bg-light py-2">
+          <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">Tutup</button>
+          <button type="button" class="btn btn-primary rounded-pill px-4 fw-semibold" id="btn-modal-save-nilai">
+            <i class="bi bi-check2-circle me-1"></i> Simpan Penilaian
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Edit Log Presensi & Jurnal -->
+  <div class="modal fade" id="modalEditLogKBM" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
+      <div class="modal-content border-0 rounded-4 shadow-lg">
+        <div class="modal-header bg-light border-0 py-3">
+          <div>
+            <h5 class="modal-title fw-bold text-primary mb-0">
+              <i class="bi bi-pencil-square me-2"></i>Edit Log Presensi & Jurnal KBM
+            </h5>
+            <div class="text-muted small mt-1" id="edit-log-subinfo">Kelas - Mapel | Tanggal</div>
+          </div>
+          <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4">
+          <input type="hidden" id="edit-log-id-jurnal">
+          <input type="hidden" id="edit-log-id-jadwal">
+          <input type="hidden" id="edit-log-id-mapel">
+          <input type="hidden" id="edit-log-kelas">
+          <input type="hidden" id="edit-log-tanggal">
+          <input type="hidden" id="edit-log-id-guru">
+
+          <div class="row g-3 mb-4">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold small text-muted">Materi Pokok / Bahasan Topik <span class="text-danger">*</span></label>
+              <input type="text" id="edit-log-materi" class="form-control">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold small text-muted">Catatan Guru / Evaluasi Kelas</label>
+              <input type="text" id="edit-log-catatan-kelas" class="form-control" placeholder="Catatan...">
+            </div>
+          </div>
+
+          <h6 class="fw-bold mb-3 text-dark"><i class="bi bi-people-fill text-info me-2"></i>Kehadiran & Nilai Santri</h6>
+          <div class="table-responsive" style="max-height: 380px;">
+            <table class="table table-sm align-middle table-hover mb-0">
+              <thead class="table-light text-muted small position-sticky top-0">
+                <tr>
+                  <th width="40">No</th>
+                  <th>Nama Santri</th>
+                  <th width="280" class="text-center">Status Kehadiran</th>
+                  <th width="110" class="text-center">Nilai</th>
+                  <th>Catatan Santri</th>
+                </tr>
+              </thead>
+              <tbody id="edit-log-tbody-santri">
+                <!-- Populated via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="modal-footer border-0 bg-light py-2">
+          <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">Batal</button>
+          <button type="button" class="btn btn-success rounded-pill px-4 fw-semibold" id="btn-save-edit-log">
+            <i class="bi bi-save me-1"></i> Simpan Perubahan Log
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Modal Konfirmasi PIN -->
   <div class="modal fade" id="pinModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">

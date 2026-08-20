@@ -277,14 +277,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // --- Log Presensi Logic ---
   const navJadwal = document.getElementById('nav-jadwal');
+  // --- Log Presensi Logic ---
+  const navJadwal = document.getElementById('nav-jadwal');
   const navLog = document.getElementById('nav-log');
   const dashboardSection = document.getElementById('dashboard-section');
   const logSection = document.getElementById('log-section');
   const configSection = document.getElementById('config-section');
   
   const filterTanggalLog = document.getElementById('filter-tanggal-log');
+  const filterKelasLog = document.getElementById('filter-kelas-log');
+  const filterStatusLog = document.getElementById('filter-status-log');
+  const filterSearchLog = document.getElementById('filter-search-log');
   const btnRefreshLog = document.getElementById('btn-refresh-log');
+  const btnPrintLog = document.getElementById('btn-print-log');
   const tbodyLog = document.getElementById('body-log');
+
+  let currentRawLogData = [];
+
+  // Set default date to today on load
+  const todayDateStr = new Date().toISOString().split('T')[0];
+  if (filterTanggalLog) {
+    filterTanggalLog.value = todayDateStr;
+  }
 
   if (navJadwal && navLog) {
     navJadwal.addEventListener('change', () => {
@@ -299,17 +313,21 @@ document.addEventListener('DOMContentLoaded', () => {
         dashboardSection.classList.add('d-none');
         logSection.classList.remove('d-none');
         configSection.classList.add('d-none');
-        // Initialize date and fetch if empty
+        // Fetch log for today
         if(!filterTanggalLog.value) {
-           filterTanggalLog.value = new Date().toISOString().split('T')[0];
-           fetchLogKbm();
+           filterTanggalLog.value = todayDateStr;
         }
+        fetchLogKbm();
       }
     });
   }
 
   if (filterTanggalLog) filterTanggalLog.addEventListener('change', fetchLogKbm);
+  if (filterKelasLog) filterKelasLog.addEventListener('change', applyLogFilters);
+  if (filterStatusLog) filterStatusLog.addEventListener('change', applyLogFilters);
+  if (filterSearchLog) filterSearchLog.addEventListener('input', applyLogFilters);
   if (btnRefreshLog) btnRefreshLog.addEventListener('click', fetchLogKbm);
+  if (btnPrintLog) btnPrintLog.addEventListener('click', () => printLogTable());
 
   async function fetchLogKbm() {
     if (!filterTanggalLog || !filterTanggalLog.value) return;
@@ -328,7 +346,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const res = await response.json();
       
       if(res.success) {
-        renderLogTable(res.data);
+        currentRawLogData = res.data || [];
+        populateKelasFilterLog(currentRawLogData);
+        applyLogFilters();
       } else {
         Swal.fire('Error', res.message || 'Gagal memuat log.', 'error');
         tbodyLog.innerHTML = `<tr><td colspan="10" class="text-center py-5 text-danger">Gagal memuat log presensi.</td></tr>`;
@@ -342,9 +362,80 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  function populateKelasFilterLog(data) {
+    if (!filterKelasLog) return;
+    const currentVal = filterKelasLog.value;
+    const classes = [...new Set(data.map(d => d.kelas).filter(Boolean))].sort();
+    filterKelasLog.innerHTML = '<option value="Semua">Semua Kelas</option>';
+    classes.forEach(c => {
+      filterKelasLog.innerHTML += `<option value="${c}">${c}</option>`;
+    });
+    if (classes.includes(currentVal)) {
+      filterKelasLog.value = currentVal;
+    }
+  }
+
+  function applyLogFilters() {
+    let filtered = currentRawLogData;
+    const kelasVal = filterKelasLog ? filterKelasLog.value : 'Semua';
+    const statusVal = filterStatusLog ? filterStatusLog.value : 'Semua';
+    const searchVal = filterSearchLog ? filterSearchLog.value.toLowerCase().trim() : '';
+
+    if (kelasVal !== 'Semua') {
+      filtered = filtered.filter(d => String(d.kelas) === String(kelasVal));
+    }
+    if (statusVal === 'Sudah Isi') {
+      filtered = filtered.filter(d => d.status_isi === true);
+    } else if (statusVal === 'Belum Isi') {
+      filtered = filtered.filter(d => d.status_isi !== true);
+    }
+    if (searchVal) {
+      filtered = filtered.filter(d => 
+        (d.guru && d.guru.toLowerCase().includes(searchVal)) ||
+        (d.pelajaran && d.pelajaran.toLowerCase().includes(searchVal)) ||
+        (d.kelas && d.kelas.toLowerCase().includes(searchVal)) ||
+        (d.materi && d.materi.toLowerCase().includes(searchVal))
+      );
+    }
+
+    // Update Summary Statistics
+    updateLogStats(currentRawLogData);
+    renderLogTable(filtered);
+  }
+
+  function updateLogStats(data) {
+    const totalJadwal = data.length;
+    const terlaksana = data.filter(d => d.status_isi === true).length;
+    const belum = totalJadwal - terlaksana;
+
+    let totalSantriHadir = 0;
+    let totalSantriAll = 0;
+    data.forEach(d => {
+      if (d.status_isi) {
+        const h = parseInt(d.hadir) || 0;
+        const i = parseInt(d.izin) || 0;
+        const s = parseInt(d.sakit) || 0;
+        const a = parseInt(d.alfa) || 0;
+        totalSantriHadir += h;
+        totalSantriAll += (h + i + s + a);
+      }
+    });
+    const persenHadir = totalSantriAll > 0 ? Math.round((totalSantriHadir / totalSantriAll) * 100) : 0;
+
+    const elTotal = document.getElementById('stat-total-jadwal');
+    const elTerlaksana = document.getElementById('stat-terlaksana');
+    const elBelum = document.getElementById('stat-belum-terisi');
+    const elPersen = document.getElementById('stat-persen-hadir');
+
+    if (elTotal) elTotal.innerText = totalJadwal;
+    if (elTerlaksana) elTerlaksana.innerText = terlaksana;
+    if (elBelum) elBelum.innerText = belum;
+    if (elPersen) elPersen.innerText = persenHadir + '%';
+  }
+
   function renderLogTable(data) {
     if (!data || data.length === 0) {
-      tbodyLog.innerHTML = `<tr><td colspan="11" class="text-center py-5 text-muted"><div class="text-center mb-3"><i class="bi bi-calendar2-x display-4 text-light"></i></div>Tidak ada jadwal KBM pada hari ini.</td></tr>`;
+      tbodyLog.innerHTML = `<tr><td colspan="10" class="text-center py-5 text-muted"><div class="text-center mb-3"><i class="bi bi-calendar2-x display-4 text-light"></i></div>Tidak ada log KBM yang cocok dengan filter.</td></tr>`;
       return;
     }
 
@@ -404,12 +495,12 @@ document.addEventListener('DOMContentLoaded', () => {
            <span class="badge bg-danger" style="cursor: pointer;" title="Alfa" onclick="showDetailSantriModal('${item.id_jurnal}', 'Alfa')">${item.alfa}</span>
         </td>
         <td>
-           <div class="fw-medium small">${item.materi}</div>
-           <div class="text-muted small fst-italic mt-1">${item.catatan_kelas}</div>
+           <div class="fw-medium small">${item.materi || '-'}</div>
+           <div class="text-muted small fst-italic mt-1">${item.catatan_kelas || ''}</div>
         </td>
         <td>
            ${item.status_isi ? `<div class="d-flex gap-1 justify-content-center">
-             <button class="btn btn-sm btn-outline-primary rounded-pill py-0 px-2 btn-edit-log" data-id="${item.id_jurnal}" title="Edit Log">
+             <button class="btn btn-sm btn-outline-primary rounded-pill py-0 px-2 btn-edit-log" data-id="${item.id_jurnal}" title="Edit Log Presensi & Jurnal">
                <i class="bi bi-pencil"></i>
              </button>
              <button class="btn btn-sm btn-outline-danger rounded-pill py-0 px-2 btn-delete-log" data-id="${item.id_jurnal}" title="Hapus Log">
@@ -421,14 +512,11 @@ document.addEventListener('DOMContentLoaded', () => {
       tbodyLog.appendChild(tr);
     });
 
-    // Bind edit buttons
+    // Bind edit buttons to open Modal Edit
     document.querySelectorAll('.btn-edit-log').forEach(btn => {
        btn.addEventListener('click', (e) => {
-          Swal.fire({
-            title: 'Info Edit',
-            text: 'Untuk saat ini, jika ada kesalahan input KBM, silakan Hapus log ini menggunakan PIN Admin, kemudian isi ulang presensi.',
-            icon: 'info'
-          });
+          const idJurnal = e.currentTarget.getAttribute('data-id');
+          openEditLogModal(idJurnal);
        });
     });
 
@@ -441,90 +529,143 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  window.showDetailSantriModal = function(idJurnal, filterStatus) {
-      if (!idJurnal || idJurnal === 'undefined') return;
-      
-      const santriData = window.santriDetailsCache ? window.santriDetailsCache[idJurnal] : null;
-      let html = '<div class="text-center py-3 text-muted">Data tidak ditemukan.</div>';
-      let modalTitle = 'Detail Catatan Santri';
-      
-      if (santriData && santriData.length > 0) {
-         const filtered = santriData.filter(c => String(c.status || 'Hadir').toLowerCase().includes(filterStatus.toLowerCase()));
-         if (filtered.length > 0) {
-            let lis = filtered.map(c => {
-                let text = `<strong>${c.nama}</strong>: `;
-                let stColor = 'secondary';
-                let stStr = String(c.status || 'Hadir').toLowerCase();
-                if(stStr.includes('hadir')) stColor = 'success';
-                else if(stStr.includes('izin')) stColor = 'warning text-dark';
-                else if(stStr.includes('sakit')) stColor = 'info text-dark';
-                else if(stStr.includes('alfa')) stColor = 'danger';
-                
-                text += `<span class="badge bg-${stColor} ms-1">${c.status || 'Hadir'}</span>`;
-                if(c.nilai) text += `<span class="badge bg-primary ms-1">Nilai: ${c.nilai}</span>`;
-                if(c.catatan) text += `<span class="text-muted ms-1 fst-italic">"${c.catatan}"</span>`;
-                return `<li class="mb-2 pb-2 border-bottom">${text}</li>`;
-            }).join('');
-            html = `<ul class="list-unstyled mb-0">${lis}</ul>`;
-            modalTitle = `Detail Santri : ${filterStatus} (${filtered.length} Santri)`;
-         } else {
-            html = `<div class="text-center py-3 text-muted">Tidak ada santri dengan status ${filterStatus}.</div>`;
-            modalTitle = `Detail Santri : ${filterStatus}`;
-         }
-      }
-      
-      const body = document.getElementById('modal-detail-santri-body');
-      if (body) body.innerHTML = html;
-      
-      const titleEl = document.getElementById('modal-detail-santri-title');
-      if (titleEl) titleEl.innerText = modalTitle;
-      
-      const myModal = new bootstrap.Modal(document.getElementById('modal-detail-santri'));
-      myModal.show();
-  };
+  function openEditLogModal(idJurnal) {
+    const item = currentRawLogData.find(d => d.id_jurnal === idJurnal);
+    if (!item) {
+      Swal.fire('Error', 'Data log tidak ditemukan.', 'error');
+      return;
+    }
 
-  function confirmDeleteLog(idJurnal) {
-    Swal.fire({
-      title: 'Hapus Log?',
-      text: 'Masukkan PIN Admin untuk menghapus log presensi dan jurnal ini.',
-      input: 'password',
-      inputAttributes: {
-        autocapitalize: 'off',
-        autocorrect: 'off'
-      },
-      showCancelButton: true,
-      confirmButtonText: 'Hapus',
-      cancelButtonText: 'Batal',
-      showLoaderOnConfirm: true,
-      preConfirm: async (pin) => {
-        if (pin !== 'admin991588') {
-          Swal.showValidationMessage('PIN salah!');
-          return false;
+    document.getElementById('edit-log-id-jurnal').value = item.id_jurnal || '';
+    document.getElementById('edit-log-id-jadwal').value = item.id_jadwal || '';
+    document.getElementById('edit-log-id-mapel').value = item.id_mapel || '';
+    document.getElementById('edit-log-kelas').value = item.kelas || '';
+    document.getElementById('edit-log-tanggal').value = item.tanggal || filterTanggalLog.value;
+    document.getElementById('edit-log-id-guru').value = item.id_guru || item.guru || '';
+    document.getElementById('edit-log-materi').value = item.materi || '';
+    document.getElementById('edit-log-catatan-kelas').value = item.catatan_kelas || '';
+    document.getElementById('edit-log-subinfo').innerText = `Kelas ${item.kelas} - ${item.pelajaran} | Guru: ${item.guru} (Tgl: ${item.tanggal || filterTanggalLog.value})`;
+
+    const tbody = document.getElementById('edit-log-tbody-santri');
+    tbody.innerHTML = '';
+
+    const santriList = item.catatan_santri || [];
+    if (santriList.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" class="text-center py-3 text-muted">Tidak ada rincian santri pada sesi ini.</td></tr>';
+    } else {
+      santriList.forEach((s, idx) => {
+        const sId = s.nis || s.id_santri || `S_${idx}`;
+        const st = String(s.status || 'Hadir').toLowerCase();
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="text-muted small">${idx + 1}</td>
+          <td class="fw-medium">
+            ${s.nama}
+            <input type="hidden" class="edit-santri-id" value="${sId}">
+            <input type="hidden" class="edit-santri-nama" value="${s.nama}">
+          </td>
+          <td class="text-center">
+            <div class="attendance-radios">
+              <input type="radio" name="edit_abs_${sId}" id="edit_hadir_${sId}" value="Hadir" ${st.includes('hadir') ? 'checked' : ''}>
+              <label for="edit_hadir_${sId}">Hadir</label>
+              
+              <input type="radio" name="edit_abs_${sId}" id="edit_sakit_${sId}" value="Sakit" ${st.includes('sakit') ? 'checked' : ''}>
+              <label for="edit_sakit_${sId}">Sakit</label>
+              
+              <input type="radio" name="edit_abs_${sId}" id="edit_izin_${sId}" value="Izin" ${st.includes('izin') ? 'checked' : ''}>
+              <label for="edit_izin_${sId}">Izin</label>
+              
+              <input type="radio" name="edit_abs_${sId}" id="edit_alfa_${sId}" value="Alfa" ${st.includes('alfa') ? 'checked' : ''}>
+              <label for="edit_alfa_${sId}">Alfa</label>
+            </div>
+          </td>
+          <td>
+            <input type="number" class="form-control form-control-sm text-center edit-santri-nilai" value="${s.nilai || ''}" placeholder="0-100" min="0" max="100">
+          </td>
+          <td>
+            <input type="text" class="form-control form-control-sm edit-santri-catatan" value="${s.catatan || ''}" placeholder="Catatan...">
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    const editModal = new bootstrap.Modal(document.getElementById('modalEditLogKBM'));
+    editModal.show();
+  }
+
+  // Handle Save Edit Log
+  const btnSaveEditLog = document.getElementById('btn-save-edit-log');
+  if (btnSaveEditLog) {
+    btnSaveEditLog.addEventListener('click', async () => {
+      const idJurnal = document.getElementById('edit-log-id-jurnal').value;
+      const materi = document.getElementById('edit-log-materi').value.trim();
+      const catatanKelas = document.getElementById('edit-log-catatan-kelas').value.trim();
+
+      if (!materi) {
+        Swal.fire('Perhatian', 'Materi Pokok / Bahasan Topik wajib diisi!', 'warning');
+        return;
+      }
+
+      const rows = document.querySelectorAll('#edit-log-tbody-santri tr');
+      const absensiList = [];
+      rows.forEach(tr => {
+        const idInp = tr.querySelector('.edit-santri-id');
+        if (!idInp) return;
+        const sId = idInp.value;
+        const sNama = tr.querySelector('.edit-santri-nama') ? tr.querySelector('.edit-santri-nama').value : '';
+        const radio = tr.querySelector(`input[name="edit_abs_${sId}"]:checked`);
+        const nilaiInp = tr.querySelector('.edit-santri-nilai');
+        const catatanInp = tr.querySelector('.edit-santri-catatan');
+
+        absensiList.push({
+          id_santri: sId,
+          nis: sId,
+          nama_santri: sNama,
+          kehadiran: radio ? radio.value : 'Hadir',
+          nilai: nilaiInp ? nilaiInp.value.trim() : '',
+          catatan: catatanInp ? catatanInp.value.trim() : ''
+        });
+      });
+
+      const payload = {
+        action: 'update_log_kbm',
+        id_jurnal: idJurnal,
+        id_jadwal: document.getElementById('edit-log-id-jadwal').value,
+        id_mapel: document.getElementById('edit-log-id-mapel').value,
+        kelas: document.getElementById('edit-log-kelas').value,
+        tanggal: document.getElementById('edit-log-tanggal').value,
+        id_guru: document.getElementById('edit-log-id-guru').value,
+        materi: materi,
+        catatan: catatanKelas,
+        absensi: absensiList
+      };
+
+      showLoading(true);
+      try {
+        const response = await fetch("https://script.google.com/macros/s/AKfycbxWjwlc6-mXpOimodZMFvQIC8hwdGRAz78PqnYIfQgSuXKkI9fUP4hXfC5x3QUIypiT/exec?action=update_log_kbm", {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(payload)
+        });
+        const res = await response.json();
+        showLoading(false);
+        if (res.success) {
+          bootstrap.Modal.getInstance(document.getElementById('modalEditLogKBM')).hide();
+          Swal.fire('Berhasil!', 'Log Presensi & Jurnal KBM berhasil diperbarui.', 'success');
+          fetchLogKbm();
+        } else {
+          Swal.fire('Gagal', res.message || 'Terjadi kesalahan.', 'error');
         }
-        
-        try {
-          const payload = { action: 'delete_log_kbm', id_jurnal: idJurnal };
-          const response = await fetch("https://script.google.com/macros/s/AKfycbxWjwlc6-mXpOimodZMFvQIC8hwdGRAz78PqnYIfQgSuXKkI9fUP4hXfC5x3QUIypiT/exec", {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify(payload)
-          });
-          const res = await response.json();
-          if (!res.success) {
-            throw new Error(res.message || 'Gagal menghapus log.');
-          }
-          return res;
-        } catch (error) {
-          Swal.showValidationMessage(`Request failed: ${error}`);
-        }
-      },
-      allowOutsideClick: () => !Swal.isLoading()
-    }).then((result) => {
-      if (result.isConfirmed) {
-        Swal.fire('Terhapus!', 'Log presensi berhasil dihapus.', 'success');
-        fetchLogKbm(); // Refresh table
+      } catch(err) {
+        showLoading(false);
+        Swal.fire('Error', 'Gagal mengirim pembaruan ke server.', 'error');
       }
     });
+  }
+
+  function printLogTable() {
+    window.print();
   }
 
   // Tombol Kembali
@@ -702,7 +843,27 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 800);
   });
 
+  let currentLoadedSantri = [];
+  let kbmNilaiState = {
+    tipe_nilai: 'Tugas',
+    materi: '',
+    nilai_santri: {}
+  };
+
   function renderSantri(data) {
+    currentLoadedSantri = data || [];
+    kbmNilaiState = {
+      tipe_nilai: 'Tugas',
+      materi: document.getElementById('input-materi') ? document.getElementById('input-materi').value : '',
+      nilai_santri: {}
+    };
+
+    const badgeNilai = document.getElementById('badge-nilai-status');
+    if (badgeNilai) {
+      badgeNilai.className = 'badge bg-primary-subtle text-primary ms-1';
+      badgeNilai.innerText = 'Opsional';
+    }
+
     const tbody = document.getElementById('santri-tbody');
     document.getElementById('santri-count').innerText = data.length + " Santri";
     tbody.innerHTML = '';
@@ -733,25 +894,113 @@ document.addEventListener('DOMContentLoaded', () => {
             <label for="alfa_${s.id}">Alfa</label>
           </div>
         </td>
-        <td>
-          <input type="number" class="form-control form-control-sm text-center bg-light input-nilai-santri" placeholder="0-100" min="0" max="100" id="nilai_${s.id}">
-        </td>
         <td class="pe-4">
-          <input type="text" class="form-control form-control-sm bg-light" placeholder="Keterangan..." id="catatan_${s.id}">
+          <input type="text" class="form-control form-control-sm bg-light" placeholder="Keterangan / Catatan santri..." id="catatan_${s.id}">
         </td>
       `;
       tbody.appendChild(tr);
     });
   }
 
-  // Set Nilai Semua Event
-  const inputDefaultNilai = document.getElementById('input-default-nilai');
-  if(inputDefaultNilai) {
-    inputDefaultNilai.addEventListener('input', (e) => {
-      const val = e.target.value;
-      const allNilaiInputs = document.querySelectorAll('.input-nilai-santri');
-      allNilaiInputs.forEach(input => {
-        input.value = val;
+  // --- Modal Penilaian KBM / Nilai Harian Events ---
+  const btnOpenModalNilai = document.getElementById('btn-open-modal-nilai');
+  const btnModalApplyAllNilai = document.getElementById('btn-modal-apply-all-nilai');
+  const btnModalSaveNilai = document.getElementById('btn-modal-save-nilai');
+
+  if (btnOpenModalNilai) {
+    btnOpenModalNilai.addEventListener('click', () => {
+      if (!currentLoadedSantri || currentLoadedSantri.length === 0) {
+        Swal.fire('Perhatian', 'Silakan pilih jadwal dan muat data santri terlebih dahulu.', 'warning');
+        return;
+      }
+
+      // Sync materi input if not filled
+      const inpMateri = document.getElementById('input-materi');
+      const modalMateri = document.getElementById('modal-nilai-materi');
+      if (modalMateri && inpMateri && !modalMateri.value) {
+        modalMateri.value = inpMateri.value;
+      }
+
+      const modalTbody = document.getElementById('modal-nilai-tbody');
+      modalTbody.innerHTML = '';
+
+      currentLoadedSantri.forEach((s, idx) => {
+        const existing = (kbmNilaiState.nilai_santri && kbmNilaiState.nilai_santri[s.id]) || { nilai: '', catatan: '' };
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="text-muted small">${idx + 1}</td>
+          <td class="fw-medium">${s.nama}</td>
+          <td>
+            <input type="number" class="form-control form-control-sm text-center input-modal-nilai" data-id="${s.id}" value="${existing.nilai || ''}" placeholder="0-100" min="0" max="100">
+          </td>
+          <td>
+            <input type="text" class="form-control form-control-sm input-modal-catatan" data-id="${s.id}" value="${existing.catatan || ''}" placeholder="Catatan...">
+          </td>
+        `;
+        modalTbody.appendChild(tr);
+      });
+
+      const modalEl = document.getElementById('modalNilaiKBM');
+      if (modalEl) {
+        const myModal = new bootstrap.Modal(modalEl);
+        myModal.show();
+      }
+    });
+  }
+
+  if (btnModalApplyAllNilai) {
+    btnModalApplyAllNilai.addEventListener('click', () => {
+      const val = document.getElementById('modal-nilai-default').value;
+      if (val === '') return;
+      document.querySelectorAll('.input-modal-nilai').forEach(inp => {
+        inp.value = val;
+      });
+    });
+  }
+
+  if (btnModalSaveNilai) {
+    btnModalSaveNilai.addEventListener('click', () => {
+      const tipe = document.getElementById('modal-nilai-tipe').value;
+      const materi = document.getElementById('modal-nilai-materi').value.trim();
+
+      kbmNilaiState.tipe_nilai = tipe;
+      kbmNilaiState.materi = materi;
+      kbmNilaiState.nilai_santri = {};
+
+      let filledCount = 0;
+      document.querySelectorAll('.input-modal-nilai').forEach(inp => {
+        const sId = inp.getAttribute('data-id');
+        const cInp = document.querySelector(`.input-modal-catatan[data-id="${sId}"]`);
+        const val = inp.value.trim();
+        if (val !== '') filledCount++;
+        kbmNilaiState.nilai_santri[sId] = {
+          nilai: val,
+          catatan: cInp ? cInp.value.trim() : ''
+        };
+      });
+
+      const badge = document.getElementById('badge-nilai-status');
+      if (badge) {
+        if (filledCount > 0) {
+          badge.className = 'badge bg-success text-white ms-1';
+          badge.innerText = `${filledCount} Santri Dinilai`;
+        } else {
+          badge.className = 'badge bg-primary-subtle text-primary ms-1';
+          badge.innerText = 'Opsional';
+        }
+      }
+
+      const modalEl = document.getElementById('modalNilaiKBM');
+      if (modalEl) {
+        bootstrap.Modal.getInstance(modalEl).hide();
+      }
+
+      Swal.fire({
+        title: 'Penilaian Disimpan',
+        text: `${filledCount} santri telah diberikan nilai. Nilai akan dikirim saat Anda menekan Simpan KBM.`,
+        icon: 'success',
+        timer: 1800,
+        showConfirmButton: false
       });
     });
   }
@@ -763,7 +1012,6 @@ document.addEventListener('DOMContentLoaded', () => {
       statusIndicator.className = 'status-indicator online shadow-sm';
       statusIndicator.innerHTML = '<i class="bi bi-wifi"></i>';
       statusIndicator.title = 'Status Koneksi: Online';
-      // Here we would typically sync pending offline data
     } else {
       statusIndicator.className = 'status-indicator offline shadow-sm';
       statusIndicator.innerHTML = '<i class="bi bi-wifi-off"></i>';
@@ -931,23 +1179,29 @@ document.addEventListener('DOMContentLoaded', () => {
     // Here we collect the form data
     const isOffline = !navigator.onLine;
 
-    // Collect Absensi Data
+    // Collect Absensi Data & Nilai
     const absensiData = [];
     const tbody = document.getElementById('santri-tbody');
     const rows = tbody.querySelectorAll('tr');
     rows.forEach(tr => {
       const radioChecked = tr.querySelector('input[type="radio"]:checked');
-      const inputNilai = tr.querySelector('.input-nilai-santri');
       const inputCatatan = tr.querySelector('td:last-child input');
       
       // Extract ID from radio name (format: abs_{id})
       const santriId = radioChecked ? radioChecked.name.replace('abs_', '') : '';
+      const santriObj = currentLoadedSantri.find(s => String(s.id) === String(santriId));
+      const sNama = santriObj ? santriObj.nama : '';
+
+      // Check if there is grade in kbmNilaiState
+      const nilaiObj = (kbmNilaiState.nilai_santri && kbmNilaiState.nilai_santri[santriId]) || {};
       
       absensiData.push({
         id_santri: santriId,
+        nis: santriId,
+        nama_santri: sNama,
         kehadiran: radioChecked ? radioChecked.value : 'Hadir',
-        nilai: inputNilai ? inputNilai.value : '',
-        catatan: inputCatatan ? inputCatatan.value : ''
+        nilai: (nilaiObj.nilai !== undefined && nilaiObj.nilai !== null) ? nilaiObj.nilai : '',
+        catatan: inputCatatan ? inputCatatan.value : (nilaiObj.catatan || '')
       });
     });
 
@@ -961,12 +1215,12 @@ document.addEventListener('DOMContentLoaded', () => {
       id_jadwal: selJam.options[selJam.selectedIndex] ? selJam.options[selJam.selectedIndex].getAttribute('data-id') : "",
       materi: document.getElementById('input-materi').value,
       catatan: document.getElementById('input-catatan').value,
+      tipe_nilai: kbmNilaiState.tipe_nilai || 'Tugas',
       absensi: absensiData
     };
 
     if(isOffline) {
       showLoading(false);
-      // Save to localStorage (dummy logic as before)
       Swal.fire('Tersimpan Offline', 'Anda sedang offline. Data presensi dan jurnal disimpan secara lokal dan akan dikirim saat koneksi pulih.', 'info');
       resetFormComplete();
       pinAttempts = 3;
@@ -980,17 +1234,22 @@ document.addEventListener('DOMContentLoaded', () => {
         
         showLoading(false);
         if(res.success) {
-          // Update id_jadwal and kelas into activeClockIn BEFORE form is reset so doClockOut can use it
+          // Update id_jadwal and kelas into activeClockIn
           if(activeClockIn) {
             if(payload.id_jadwal) activeClockIn.id_jadwal = payload.id_jadwal;
             if(payload.kelas) activeClockIn.kelas = payload.kelas;
           }
           
-          Swal.fire('Berhasil!', 'Data Presensi dan Jurnal Mengajar telah tersimpan ke database.', 'success').then(() => {
-            resetFormComplete();
+          Swal.fire({
+            title: 'Presensi Tercatat!',
+            text: 'Data Presensi santri dan Jurnal KBM telah berhasil tersimpan. Sesi mengajar Anda tetap berjalan hingga Anda menekan tombol Jam Keluar saat KBM selesai.',
+            icon: 'success',
+            confirmButtonText: 'Selesai Input Presensi'
+          }).then(() => {
+            // Form presensi disembunyikan / direset tanpa mematikan sesi Jam Keluar!
+            document.getElementById('content-area').classList.add('d-none');
+            if (btnJamKeluar) btnJamKeluar.classList.remove('d-none');
             pinAttempts = 3;
-            // Otomatis menekan tombol keluar
-            doClockOut();
           });
         } else {
           Swal.fire('Gagal', res.message || 'Terjadi kesalahan saat menyimpan.', 'error');
