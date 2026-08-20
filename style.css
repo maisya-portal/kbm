@@ -88,18 +88,20 @@ body {
 }
 .loading-pill {
   background: white;
-  padding: 10px 24px;
+  padding: 8px 20px;
   border-radius: 50px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--primary-color);
+  font-size: 0.9rem;
 }
 
 /* Custom Table for Attendance */
 .table-scroll-container {
-  max-height: 400px;
+  max-height: 480px;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 /* Ensure header stays on top when scrolling */
 .table-scroll-container thead th {
@@ -117,30 +119,40 @@ body {
 }
 .custom-table td {
   border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+}
+
+.col-kehadiran {
+  width: 280px;
+}
+.col-catatan {
+  min-width: 180px;
 }
 
 /* Radio Button Group (Pill style for attendance) */
 .attendance-radios {
-  display: flex;
-  gap: 5px;
+  display: inline-flex;
+  gap: 4px;
   justify-content: center;
+  align-items: center;
 }
 .attendance-radios input[type="radio"] {
   display: none;
 }
 .attendance-radios label {
   cursor: pointer;
-  padding: 6px 14px;
+  padding: 6px 12px;
   border-radius: 8px;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   font-weight: 600;
   border: 1px solid #e2e8f0;
   color: var(--text-muted);
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
   user-select: none;
+  white-space: nowrap;
 }
 .attendance-radios input[type="radio"]:checked + label {
-  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+  box-shadow: 0 3px 6px -1px rgba(0,0,0,0.12);
   border-color: transparent;
   color: white;
 }
@@ -168,17 +180,10 @@ body {
   letter-spacing: 0.5em;
 }
 
-/* Sticky Action Bar */
-.sticky-action-bar {
-  position: sticky;
-  bottom: 20px;
-  z-index: 99;
-}
-
 /* Custom Tabs */
 .custom-tabs {
   background: white;
-  padding: 8px;
+  padding: 6px;
   border-radius: 50px;
   box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
   display: inline-flex;
@@ -186,11 +191,84 @@ body {
 .custom-tabs .nav-link {
   color: var(--text-muted);
   transition: all 0.3s ease;
+  padding: 6px 16px;
+  font-size: 0.9rem;
 }
 .custom-tabs .nav-link.active {
   background-color: var(--primary-color);
   color: white;
   box-shadow: 0 4px 10px rgba(79, 70, 229, 0.3);
+}
+
+/* --- Mobile Responsiveness Optimizations (Layar HP & Tablet) --- */
+@media (max-width: 768px) {
+  body {
+    font-size: 0.9rem;
+  }
+  .app-header .container {
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
+  }
+  .logo-wrapper {
+    width: 38px;
+    height: 38px;
+  }
+  .app-header h1 {
+    font-size: 1rem !important;
+  }
+  .status-indicator {
+    width: 34px;
+    height: 34px;
+    font-size: 1rem;
+  }
+  
+  #welcome-header {
+    margin-top: 0.5rem !important;
+    margin-bottom: 1.5rem !important;
+  }
+  #welcome-header h2 {
+    font-size: 1.8rem !important;
+  }
+  #welcome-header h3 {
+    font-size: 1.1rem !important;
+    margin-top: 0.5rem !important;
+  }
+  
+  .card {
+    border-radius: 1rem !important;
+  }
+  .card-body {
+    padding: 1rem !important;
+  }
+  
+  .attendance-radios {
+    gap: 2px;
+  }
+  .attendance-radios label {
+    padding: 5px 8px;
+    font-size: 0.72rem;
+    border-radius: 6px;
+  }
+  
+  .col-kehadiran {
+    width: 220px;
+  }
+  .col-catatan {
+    min-width: 140px;
+  }
+}
+
+@media (max-width: 480px) {
+  #welcome-header h2 {
+    font-size: 1.5rem !important;
+  }
+  .attendance-radios label {
+    padding: 4px 6px;
+    font-size: 0.7rem;
+  }
+  .col-kehadiran {
+    width: 200px;
+  }
 }
 
 @keyframes pulse {

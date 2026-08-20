@@ -335,27 +335,28 @@
         </div>
       </section>
 
-      <!-- Bagian 3: Presensi Santri (Fokus Kehadiran Santri) -->
-      <section class="card border-0 shadow-sm rounded-4 mb-4">
-        <div class="card-header bg-white border-0 pt-4 pb-0 px-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
-          <h5 class="card-title fw-bold mb-0"><i class="bi bi-people me-2 text-info"></i>Daftar Santri</h5>
+      <!-- Bagian 3: Presensi Santri, Evaluasi & Aksi Simpan (Menyatu dalam 1 Card Bersih) -->
+      <section class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden" id="card-presensi-santri">
+        <div class="card-header bg-white border-0 pt-3 pb-0 px-3 px-md-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
+          <h5 class="card-title fw-bold mb-0 fs-6 fs-md-5"><i class="bi bi-people me-2 text-info"></i>Daftar Kehadiran Santri</h5>
           <div class="d-flex align-items-center gap-2">
             <!-- Tombol Khusus Penilaian KBM / Nilai Harian -->
-            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-semibold shadow-sm" id="btn-open-modal-nilai">
-              <i class="bi bi-award me-1"></i> Penilaian KBM / Nilai Harian
+            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-2 px-md-3 fw-semibold shadow-sm" id="btn-open-modal-nilai" style="font-size: 0.8rem;">
+              <i class="bi bi-award me-1"></i> Penilaian KBM
               <span class="badge bg-primary-subtle text-primary ms-1" id="badge-nilai-status">Opsional</span>
             </button>
-            <span class="badge bg-primary text-white rounded-pill px-3 py-2" id="santri-count">0 Santri</span>
+            <span class="badge bg-primary text-white rounded-pill px-2 px-md-3 py-1 py-md-2 small" id="santri-count">0 Santri</span>
           </div>
         </div>
+        
         <div class="card-body p-0 mt-3">
           <div class="table-responsive table-scroll-container">
             <table class="table table-hover align-middle mb-0 custom-table">
               <thead class="table-light text-muted">
                 <tr>
-                  <th class="ps-4 fw-medium">Nama Santri</th>
-                  <th class="text-center fw-medium" width="320">Kehadiran</th>
-                  <th class="fw-medium">Catatan Santri</th>
+                  <th class="ps-3 ps-md-4 fw-medium">Nama Santri</th>
+                  <th class="text-center fw-medium col-kehadiran">Kehadiran</th>
+                  <th class="pe-3 pe-md-4 fw-medium col-catatan">Catatan Santri</th>
                 </tr>
               </thead>
               <tbody id="santri-tbody">
@@ -364,34 +365,30 @@
             </table>
           </div>
         </div>
-      </section>
 
-      <!-- Bagian 4: Catatan Evaluasi -->
-      <section class="card border-0 shadow-sm rounded-4 mb-4">
-        <div class="card-body p-4">
-          <div class="row g-3">
-            <div class="col-12">
-              <label class="form-label fw-medium text-muted small">Catatan Kejadian / Evaluasi KBM (Opsional)</label>
-              <textarea class="form-control bg-light" id="input-catatan" rows="3" placeholder="Cth: Kelas kondusif, 2 santri remedial..."></textarea>
-            </div>
+        <!-- Bagian Evaluasi & Catatan KBM (Menyatu di Bawah Tabel) -->
+        <div class="p-3 p-md-4 border-top bg-light-subtle">
+          <label class="form-label fw-medium text-muted small mb-1">
+            <i class="bi bi-chat-left-text me-1 text-primary"></i>Catatan Kejadian / Evaluasi KBM (Opsional)
+          </label>
+          <textarea class="form-control bg-white shadow-none border-1" id="input-catatan" rows="2" placeholder="Cth: Kelas kondusif, 2 santri remedial materi..."></textarea>
+        </div>
+
+        <!-- Card Footer: Tombol Aksi Simpan Presensi & Jurnal (Menyatu di Bagian Bawah Tabel) -->
+        <div class="card-footer bg-white border-top p-3 d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3">
+          <div class="text-muted small">
+            <i class="bi bi-info-circle text-primary me-1"></i> Pastikan semua data presensi santri dan jurnal telah sesuai.
+          </div>
+          <div class="d-flex gap-2 justify-content-end w-100 w-sm-auto">
+            <button id="btn-cancel-kbm" class="btn btn-light px-3 px-md-4 py-2 rounded-pill fw-medium border shadow-sm flex-fill flex-sm-grow-0">
+              Batal
+            </button>
+            <button id="btn-save-all" class="btn btn-success px-4 py-2 rounded-pill fw-bold shadow-sm d-flex align-items-center justify-content-center flex-fill flex-sm-grow-0">
+              <i class="bi bi-cloud-arrow-up me-2"></i>Simpan KBM
+            </button>
           </div>
         </div>
       </section>
-      
-      <!-- Tombol Aksi Simpan Presensi & Jurnal -->
-      <div class="sticky-action-bar shadow-lg rounded-4 p-3 bg-white d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4 border">
-        <div class="text-muted small">
-          <i class="bi bi-info-circle me-1"></i> Pastikan semua data presensi santri dan jurnal telah sesuai.
-        </div>
-        <div class="d-flex gap-2">
-          <button id="btn-cancel-kbm" class="btn btn-light px-4 py-2 rounded-pill fw-medium border shadow-sm">
-            Batal
-          </button>
-          <button id="btn-save-all" class="btn btn-success px-4 py-2 rounded-pill fw-bold shadow-sm">
-            <i class="bi bi-cloud-arrow-up me-2"></i>Simpan KBM
-          </button>
-        </div>
-      </div>
 
     </div>
 
