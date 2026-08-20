@@ -134,6 +134,24 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
+    // Populate filter guru dropdown
+    const filterGuru = document.getElementById('filter-guru');
+    if (filterGuru) {
+      filterGuru.innerHTML = '<option value="Semua Guru">Semua Guru</option>';
+      const guruWithJadwal = [...new Set(allJadwal.map(j => j.ID_Staff))].filter(Boolean);
+      const guruData = guruWithJadwal.map(idStaff => {
+        const st = (allStaff || []).find(s => s.ID_Staff === idStaff);
+        let nama = st ? st.Nama_Lengkap : (allJadwal.find(j => j.ID_Staff === idStaff)?.Nama_Guru || idStaff);
+        nama = String(nama || '').trim();
+        if (!nama) nama = String(idStaff).trim();
+        return { idStaff, nama };
+      });
+      guruData.sort((a, b) => a.nama.localeCompare(b.nama, 'id', { sensitivity: 'base' }));
+      guruData.forEach(g => {
+        filterGuru.innerHTML += `<option value="${g.idStaff}">${g.nama}</option>`;
+      });
+    }
+
     const filterHari = document.getElementById('filter-hari');
     const filterJam = document.getElementById('filter-jam');
     
@@ -152,6 +170,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if(filterHari) filterHari.addEventListener('change', drawDashboardTable);
     if(filterJam) filterJam.addEventListener('change', drawDashboardTable);
     if(filterKelas) filterKelas.addEventListener('change', drawDashboardTable);
+    if(filterGuru) filterGuru.addEventListener('change', drawDashboardTable);
 
     // Initial draw
     drawDashboardTable();
@@ -164,6 +183,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const filterHariVal = document.getElementById('filter-hari') ? document.getElementById('filter-hari').value : 'Semua Hari';
     const filterJamVal = document.getElementById('filter-jam') ? document.getElementById('filter-jam').value : 'Semua Jam';
     const filterKelasVal = document.getElementById('filter-kelas') ? document.getElementById('filter-kelas').value : 'Semua Kelas';
+    const filterGuruVal = document.getElementById('filter-guru') ? document.getElementById('filter-guru').value : 'Semua Guru';
 
     let filtered = allJadwal;
 
@@ -173,6 +193,10 @@ document.addEventListener('DOMContentLoaded', () => {
     
     if (filterKelasVal !== 'Semua Kelas') {
       filtered = filtered.filter(j => String(j.Kelas) === String(filterKelasVal));
+    }
+
+    if (filterGuruVal !== 'Semua Guru') {
+      filtered = filtered.filter(j => String(j.ID_Staff) === String(filterGuruVal));
     }
 
     // For jam filtering, we use simple text matching on the "Jam Ke-" field if available
@@ -544,6 +568,27 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('edit-log-catatan-kelas').value = item.catatan_kelas || '';
     document.getElementById('edit-log-subinfo').innerText = `Kelas ${item.kelas} - ${item.pelajaran} | Guru: ${item.guru} (Tgl: ${item.tanggal || filterTanggalLog.value})`;
 
+    // Helper format waktu ke HH:mm untuk input type="time"
+    function cleanTimeForInput(val) {
+      if (!val || val === '-') return '';
+      const str = String(val).trim();
+      const match = str.match(/(\d{1,2})[:.](\d{2})/);
+      if (match) {
+        const h = match[1].padStart(2, '0');
+        const m = match[2];
+        return `${h}:${m}`;
+      }
+      return '';
+    }
+
+    const jamMasukVal = cleanTimeForInput(item.waktu) || cleanTimeForInput(item.scheduled_masuk);
+    const jamKeluarVal = cleanTimeForInput(item.jam_ke) || cleanTimeForInput(item.scheduled_keluar);
+    
+    const inpJamMasuk = document.getElementById('edit-log-jam-masuk');
+    const inpJamKeluar = document.getElementById('edit-log-jam-keluar');
+    if (inpJamMasuk) inpJamMasuk.value = jamMasukVal;
+    if (inpJamKeluar) inpJamKeluar.value = jamKeluarVal;
+
     const tbody = document.getElementById('edit-log-tbody-santri');
     tbody.innerHTML = '';
 
@@ -626,6 +671,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
       });
 
+      const jamMasuk = document.getElementById('edit-log-jam-masuk') ? document.getElementById('edit-log-jam-masuk').value.trim() : '';
+      const jamKeluar = document.getElementById('edit-log-jam-keluar') ? document.getElementById('edit-log-jam-keluar').value.trim() : '';
+
       const payload = {
         action: 'update_log_kbm',
         id_jurnal: idJurnal,
@@ -636,6 +684,8 @@ document.addEventListener('DOMContentLoaded', () => {
         id_guru: document.getElementById('edit-log-id-guru').value,
         materi: materi,
         catatan: catatanKelas,
+        jam_masuk: jamMasuk,
+        jam_keluar: jamKeluar,
         absensi: absensiList
       };
 

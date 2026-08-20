@@ -108,6 +108,10 @@
               <option value="Semua Kelas">Semua Kelas</option>
               <!-- Populated dynamically -->
             </select>
+            <select id="filter-guru" class="form-select form-select-sm bg-light shadow-none w-auto border-0">
+              <option value="Semua Guru">Semua Guru</option>
+              <!-- Populated dynamically -->
+            </select>
           </div>
         </div>
         
@@ -495,7 +499,7 @@
           <input type="hidden" id="edit-log-tanggal">
           <input type="hidden" id="edit-log-id-guru">
 
-          <div class="row g-3 mb-4">
+          <div class="row g-3 mb-3">
             <div class="col-md-6">
               <label class="form-label fw-semibold small text-muted">Materi Pokok / Bahasan Topik <span class="text-danger">*</span></label>
               <input type="text" id="edit-log-materi" class="form-control">
@@ -503,6 +507,19 @@
             <div class="col-md-6">
               <label class="form-label fw-semibold small text-muted">Catatan Guru / Evaluasi Kelas</label>
               <input type="text" id="edit-log-catatan-kelas" class="form-control" placeholder="Catatan...">
+            </div>
+          </div>
+
+          <div class="row g-3 mb-4 p-3 bg-light rounded-3 border">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold small text-dark"><i class="bi bi-box-arrow-in-right text-success me-1"></i>Jam Masuk KBM</label>
+              <input type="time" id="edit-log-jam-masuk" class="form-control bg-white">
+              <div class="form-text text-muted" style="font-size: 0.75rem;">Waktu kehadiran / mulai KBM</div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold small text-dark"><i class="bi bi-box-arrow-right text-danger me-1"></i>Jam Keluar KBM</label>
+              <input type="time" id="edit-log-jam-keluar" class="form-control bg-white">
+              <div class="form-text text-muted" style="font-size: 0.75rem;">Waktu kepulangan / selesai KBM</div>
             </div>
           </div>
 
