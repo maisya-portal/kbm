@@ -276,3 +276,44 @@ body {
   70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
   100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
 }
+
+/* --- Table Fullscreen / Zoom Mode --- */
+.table-fullscreen-mode {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 99999 !important;
+  border-radius: 0 !important;
+  margin: 0 !important;
+  background: white;
+  display: flex !important;
+  flex-direction: column !important;
+  box-shadow: none !important;
+  animation: none !important;
+}
+.table-fullscreen-mode .card-header {
+  padding-top: 1rem !important;
+  padding-bottom: 0.75rem !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  background: white !important;
+  flex: 0 0 auto;
+}
+.table-fullscreen-mode .card-body {
+  flex: 1 1 auto;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  margin-top: 0 !important;
+  padding: 0 !important;
+}
+.table-fullscreen-mode .table-scroll-container {
+  max-height: none !important;
+  flex: 1 1 auto;
+  height: 100%;
+}
+.table-fullscreen-mode .card-footer {
+  flex: 0 0 auto;
+}
+

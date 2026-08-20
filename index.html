@@ -338,14 +338,25 @@
       <!-- Bagian 3: Presensi Santri, Evaluasi & Aksi Simpan (Menyatu dalam 1 Card Bersih) -->
       <section class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden" id="card-presensi-santri">
         <div class="card-header bg-white border-0 pt-3 pb-0 px-3 px-md-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
-          <h5 class="card-title fw-bold mb-0 fs-6 fs-md-5"><i class="bi bi-people me-2 text-info"></i>Daftar Kehadiran Santri</h5>
           <div class="d-flex align-items-center gap-2">
+            <h5 class="card-title fw-bold mb-0 fs-6 fs-md-5"><i class="bi bi-people me-2 text-info"></i>Daftar Kehadiran Santri</h5>
+            <span class="badge bg-primary text-white rounded-pill px-2 px-md-3 py-1 py-md-2 small" id="santri-count">0 Santri</span>
+          </div>
+          <div class="d-flex align-items-center flex-wrap gap-2">
+            <!-- Pencarian Nama Santri Real-Time -->
+            <div class="input-group input-group-sm" style="width: 180px;">
+              <span class="input-group-text bg-light border-0"><i class="bi bi-search text-muted"></i></span>
+              <input type="text" id="search-santri" class="form-control bg-light border-0" placeholder="Cari nama...">
+            </div>
             <!-- Tombol Khusus Penilaian KBM / Nilai Harian -->
             <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-2 px-md-3 fw-semibold shadow-sm" id="btn-open-modal-nilai" style="font-size: 0.8rem;">
               <i class="bi bi-award me-1"></i> Penilaian KBM
               <span class="badge bg-primary-subtle text-primary ms-1" id="badge-nilai-status">Opsional</span>
             </button>
-            <span class="badge bg-primary text-white rounded-pill px-2 px-md-3 py-1 py-md-2 small" id="santri-count">0 Santri</span>
+            <!-- Tombol Zoom / Fullscreen Card Presensi -->
+            <button type="button" class="btn btn-sm btn-outline-secondary rounded-circle shadow-sm" id="btn-fullscreen-santri" title="Mode Layar Penuh (Zoom)" style="width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center;">
+              <i class="bi bi-arrows-fullscreen"></i>
+            </button>
           </div>
         </div>
         

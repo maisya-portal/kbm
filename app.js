@@ -898,6 +898,75 @@ document.addEventListener('DOMContentLoaded', () => {
       `;
       tbody.appendChild(tr);
     });
+
+    // Reset input pencarian saat data santri baru dirender
+    const searchInp = document.getElementById('search-santri');
+    if (searchInp) searchInp.value = '';
+  }
+
+  // --- Pencarian Nama Santri Real-Time ---
+  const searchSantriInput = document.getElementById('search-santri');
+  if (searchSantriInput) {
+    searchSantriInput.addEventListener('input', () => {
+      const q = searchSantriInput.value.toLowerCase().trim();
+      const rows = document.querySelectorAll('#santri-tbody tr');
+      let visibleCount = 0;
+      rows.forEach(tr => {
+        const text = tr.innerText.toLowerCase();
+        if (!q || text.includes(q)) {
+          tr.style.display = '';
+          visibleCount++;
+        } else {
+          tr.style.display = 'none';
+        }
+      });
+      const countBadge = document.getElementById('santri-count');
+      if (countBadge) {
+        if (q) {
+          countBadge.innerText = `${visibleCount} dari ${rows.length} Santri`;
+        } else {
+          countBadge.innerText = `${rows.length} Santri`;
+        }
+      }
+    });
+  }
+
+  // --- Mode Fullscreen / Zoom Tabel Presensi ---
+  const btnFullscreenSantri = document.getElementById('btn-fullscreen-santri');
+  const cardPresensiSantri = document.getElementById('card-presensi-santri');
+  if (btnFullscreenSantri && cardPresensiSantri) {
+    btnFullscreenSantri.addEventListener('click', () => {
+      const isFullscreen = cardPresensiSantri.classList.toggle('table-fullscreen-mode');
+      if (isFullscreen) {
+        btnFullscreenSantri.innerHTML = '<i class="bi bi-fullscreen-exit text-danger"></i>';
+        btnFullscreenSantri.title = 'Keluar Mode Layar Penuh';
+        if (cardPresensiSantri.requestFullscreen) {
+          cardPresensiSantri.requestFullscreen().catch(() => {});
+        }
+      } else {
+        btnFullscreenSantri.innerHTML = '<i class="bi bi-arrows-fullscreen"></i>';
+        btnFullscreenSantri.title = 'Mode Layar Penuh (Zoom)';
+        if (document.fullscreenElement && document.exitFullscreen) {
+          document.exitFullscreen().catch(() => {});
+        }
+      }
+    });
+
+    document.addEventListener('fullscreenchange', () => {
+      if (!document.fullscreenElement && cardPresensiSantri.classList.contains('table-fullscreen-mode')) {
+        cardPresensiSantri.classList.remove('table-fullscreen-mode');
+        btnFullscreenSantri.innerHTML = '<i class="bi bi-arrows-fullscreen"></i>';
+        btnFullscreenSantri.title = 'Mode Layar Penuh (Zoom)';
+      }
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && cardPresensiSantri.classList.contains('table-fullscreen-mode')) {
+        cardPresensiSantri.classList.remove('table-fullscreen-mode');
+        btnFullscreenSantri.innerHTML = '<i class="bi bi-arrows-fullscreen"></i>';
+        btnFullscreenSantri.title = 'Mode Layar Penuh (Zoom)';
+      }
+    });
   }
 
   // --- Modal Penilaian KBM / Nilai Harian Events ---
