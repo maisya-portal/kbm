@@ -25,6 +25,28 @@ document.addEventListener('DOMContentLoaded', () => {
     else loadingEl.classList.add('d-none');
   }
 
+  // Helper Format Tanggal Indonesia: "Hari, DD Bulan YYYY" (Contoh: "Kamis, 20 Agustus 2026")
+  function formatIndoDate(dateInput) {
+    if (!dateInput && dateInput !== 0) return '-';
+    var d;
+    if (dateInput instanceof Date) {
+      d = dateInput;
+    } else {
+      var str = String(dateInput).trim();
+      if (!str || str === '-' || str === 'undefined' || str === 'null') return '-';
+      var match = str.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+      if (match) {
+        d = new Date(parseInt(match[1], 10), parseInt(match[2], 10) - 1, parseInt(match[3], 10));
+      } else {
+        d = new Date(str);
+      }
+    }
+    if (isNaN(d.getTime())) return String(dateInput);
+    var days = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+    var months = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+    return days[d.getDay()] + ', ' + d.getDate() + ' ' + months[d.getMonth()] + ' ' + d.getFullYear();
+  }
+
   // GAS API URL
   const GAS_URL = "https://script.google.com/macros/s/AKfycbxWjwlc6-mXpOimodZMFvQIC8hwdGRAz78PqnYIfQgSuXKkI9fUP4hXfC5x3QUIypiT/exec?action=get_jadwal_kbm";
   let allJadwal = [];
@@ -600,7 +622,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
             <div>
               <div class="fw-bold text-dark fs-6">${item.pelajaran} - Kelas ${item.kelas}</div>
-              <div class="text-muted small">Guru: <span class="fw-medium text-dark">${item.guru}</span> | Waktu: <span class="fw-medium text-dark">${item.waktu || '-'}</span> (Tgl: ${item.tanggal || '-'})</div>
+              <div class="text-muted small">Guru: <span class="fw-medium text-dark">${item.guru}</span> | Waktu: <span class="fw-medium text-dark">${item.waktu || '-'}</span> | <span class="text-primary fw-medium">${formatIndoDate(item.tanggal)}</span></div>
             </div>
             <div class="btn-group btn-group-sm flex-wrap shadow-sm rounded-pill p-1 bg-white border" role="group">
               <button type="button" class="btn btn-sm ${currentFilter === 'Semua' ? 'btn-primary' : 'btn-light'} rounded-pill px-2 py-0 fw-medium btn-filter-detail" data-filter="Semua">Semua (${santriList.length})</button>
@@ -686,7 +708,8 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('edit-log-id-guru').value = item.id_guru || item.guru || '';
     document.getElementById('edit-log-materi').value = item.materi || '';
     document.getElementById('edit-log-catatan-kelas').value = item.catatan_kelas || '';
-    document.getElementById('edit-log-subinfo').innerText = `Kelas ${item.kelas} - ${item.pelajaran} | Guru: ${item.guru} (Tgl: ${item.tanggal || filterTanggalLog.value})`;
+    const tglDisplay = formatIndoDate(item.tanggal || filterTanggalLog.value);
+    document.getElementById('edit-log-subinfo').innerText = `Kelas ${item.kelas} - ${item.pelajaran} | Guru: ${item.guru} (${tglDisplay})`;
 
     // Helper format waktu ke HH:mm untuk input type="time"
     function cleanTimeForInput(val) {
