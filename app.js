@@ -1001,6 +1001,18 @@ document.addEventListener('DOMContentLoaded', () => {
   // Call Init
   initData();
 
+  function normalizeKelas(k) {
+    if (!k && k !== 0) return '';
+    const str = String(k).trim().toUpperCase();
+    if (str === '7' || str === '7 SMP' || str === '7SMP' || str === 'VII' || str === 'KELAS 7' || str === 'KELAS 7 SMP') return '7 SMP';
+    if (str === '8' || str === '8 SMP' || str === '8SMP' || str === 'VIII' || str === 'KELAS 8' || str === 'KELAS 8 SMP') return '8 SMP';
+    if (str === '9' || str === '9 SMP' || str === '9SMP' || str === 'IX' || str === 'KELAS 9' || str === 'KELAS 9 SMP') return '9 SMP';
+    if (str === '10' || str === '10 SMA' || str === '10SMA' || str === 'X' || str === 'KELAS 10' || str === 'KELAS 10 SMA') return '10 SMA';
+    if (str === '11' || str === '11 SMA' || str === '11SMA' || str === 'XI' || str === 'KELAS 11' || str === 'KELAS 11 SMA') return '11 SMA';
+    if (str === '12' || str === '12 SMA' || str === '12SMA' || str === 'XII' || str === 'KELAS 12' || str === 'KELAS 12 SMA') return '12 SMA';
+    return str;
+  }
+
   // Load Santri
   btnLoad.addEventListener('click', () => {
     if(!selGuru.value || !selKelas.value) return;
@@ -1008,9 +1020,20 @@ document.addEventListener('DOMContentLoaded', () => {
     showLoading(true);
     
     const selectedKelasName = selKelas.value;
+    const targetNormKelas = normalizeKelas(selectedKelasName);
     
-    // Filter santri asli dari database berdasarkan kelas
-    let generatedSantri = allSantri.filter(s => String(s.kelas) === String(selectedKelasName) || String(s.Kelas) === String(selectedKelasName));
+    // Filter santri asli dari database berdasarkan kelas dengan normalisasi cerdas
+    let generatedSantri = allSantri.filter(s => {
+      const k1 = normalizeKelas(s.kelas || s.Kelas);
+      return k1 === targetNormKelas || String(s.kelas) === String(selectedKelasName) || String(s.Kelas) === String(selectedKelasName);
+    });
+    
+    // Urutkan secara alfabetis berdasarkan nama santri
+    generatedSantri.sort((a, b) => {
+      const nA = (a.Nama || a.Nama_Santri || a.Nama_Lengkap || a.nama || '').trim();
+      const nB = (b.Nama || b.Nama_Santri || b.Nama_Lengkap || b.nama || '').trim();
+      return nA.localeCompare(nB, 'id', { sensitivity: 'base' });
+    });
     
     // Jika tidak ada santri ditemukan, berikan fallback (opsional, tapi sebaiknya kosong saja)
     if(generatedSantri.length === 0) {
@@ -1020,7 +1043,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Format data santri agar sesuai dengan fungsi renderSantri (butuh id dan nama)
     const formattedSantri = generatedSantri.map((s, i) => ({
       id: s.id_santri || s.ID_Santri || s.nis || `S${i}`,
-      nama: s.nama || s.Nama_Lengkap || s.nama_santri || s.Nama || 'Santri Tidak Dikenal'
+      nama: s.nama || s.Nama_Lengkap || s.Nama_Santri || s.Nama || 'Santri Tidak Dikenal',
+      nis: s.nis || s.NIS || '',
+      uid_card: s.uid_card || s.UID_Card || ''
     }));
     
     // Simulate API Fetch delay for UX
