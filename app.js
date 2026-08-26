@@ -77,14 +77,46 @@ document.addEventListener('DOMContentLoaded', () => {
 
         populateGuruDropdown(allStaff, allJadwal);
         renderDashboard(); // Render the dashboard after data is loaded
+        
+        // Simpan cache master data untuk pemulihan cepat
+        try {
+          localStorage.setItem('maisya_kbm_master_cache', JSON.stringify({
+            allJadwal, allMapel, allSantri, allStaff, activeJadwalIds,
+            savedAt: new Date().toISOString()
+          }));
+        } catch(e) {}
+
+        // Restore active session if available
+        restoreSessionState();
       } else {
         Swal.fire('Error', 'Gagal memuat data jadwal dari server.', 'error');
       }
     } catch (e) {
       console.error(e);
-      Swal.fire('Offline', 'Tidak dapat terhubung ke server (Offline Mode). Data jadwal tidak dapat dimuat.', 'warning');
-      selGuru.innerHTML = '<option value="" selected disabled>-- Offline --</option>';
-    }
+      // Coba pulihkan dari master cache lokal jika fetch gagal
+      let loadedFromCache = false;
+      try {
+        const cached = localStorage.getItem('maisya_kbm_master_cache');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed && parsed.allJadwal && parsed.allJadwal.length > 0) {
+            allJadwal = parsed.allJadwal || [];
+            allMapel = parsed.allMapel || [];
+            allSantri = parsed.allSantri || [];
+            allStaff = parsed.allStaff || [];
+            activeJadwalIds = parsed.activeJadwalIds || [];
+            populateGuruDropdown(allStaff, allJadwal);
+            renderDashboard();
+            restoreSessionState();
+            loadedFromCache = true;
+          }
+        }
+      } catch(eCache) {}
+
+      if (!loadedFromCache) {
+        Swal.fire('Offline', 'Tidak dapat terhubung ke server (Offline Mode). Data jadwal tidak dapat dimuat.', 'warning');
+        selGuru.innerHTML = '<option value="" selected disabled>-- Offline --</option>';
+      }
     showLoading(false);
   }
 
@@ -1117,9 +1149,18 @@ document.addEventListener('DOMContentLoaded', () => {
       tbody.appendChild(tr);
     });
 
+    // Pasang auto-save pada setiap radio dan input catatan santri
+    tbody.querySelectorAll('input').forEach(inp => {
+      inp.addEventListener('change', () => saveSessionState());
+      inp.addEventListener('input', () => saveSessionState());
+    });
+
     // Reset input pencarian saat data santri baru dirender
     const searchInp = document.getElementById('search-santri');
     if (searchInp) searchInp.value = '';
+    
+    // Auto-save state saat data santri dimuat
+    saveSessionState();
   }
 
   // --- Pencarian Nama Santri Real-Time ---
@@ -1751,6 +1792,7 @@ document.addEventListener('DOMContentLoaded', () => {
     btnLoad.disabled = true;
     selGuru.selectedIndex = 0;
     
+    clearSessionState();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
@@ -1788,8 +1830,274 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Format: hari, jam tanggal-bulan-tahun
     clockDisplay.innerText = `${dayName}, ${h}:${m}:${s} | ${date}-${monthName}-${year}`;
+    
+    // Update lock screen clock if visible
+    const lockClockTime = document.getElementById('lock-clock-time');
+    if (lockClockTime) {
+      lockClockTime.innerText = `${h}:${m}:${s}`;
+    }
   }
   setInterval(updateClock, 1000);
   updateClock();
+
+  // ================================================================
+  // KBM SESSION PERSISTENCE & LOCK SCREEN ENGINE
+  // ================================================================
+  const STORAGE_KEY = 'maisya_kbm_pwa_session_v1';
+  const lockOverlay = document.getElementById('kbm-lock-overlay');
+  const btnLockScreen = document.getElementById('btn-lock-screen');
+  const btnUnlockKbm = document.getElementById('btn-unlock-kbm');
+
+  function isLockScreenActive() {
+    return lockOverlay && !lockOverlay.classList.contains('d-none');
+  }
+
+  function saveSessionState(isLocked) {
+    try {
+      const configSec = document.getElementById('config-section');
+      const contentSec = document.getElementById('content-area');
+      const logSec = document.getElementById('log-section');
+      const dashboardSec = document.getElementById('dashboard-section');
+
+      const isConfigVisible = configSec && !configSec.classList.contains('d-none');
+      const isContentVisible = contentSec && !contentSec.classList.contains('d-none');
+      const isLogVisible = logSec && !logSec.classList.contains('d-none');
+
+      // Do not save if at empty dashboard
+      if (!selGuru.value && !activeClockIn && !isContentVisible && !isConfigVisible) {
+        return;
+      }
+
+      // Collect student checks
+      const absensiDraft = {};
+      const tbody = document.getElementById('santri-tbody');
+      if (tbody) {
+        const rows = tbody.querySelectorAll('tr');
+        rows.forEach(tr => {
+          const radioChecked = tr.querySelector('input[type="radio"]:checked');
+          const inputCatatan = tr.querySelector('td:last-child input');
+          const santriId = radioChecked ? radioChecked.name.replace('abs_', '') : '';
+          if (santriId) {
+            absensiDraft[santriId] = {
+              status: radioChecked ? radioChecked.value : 'Hadir',
+              catatan: inputCatatan ? inputCatatan.value : ''
+            };
+          }
+        });
+      }
+
+      const state = {
+        view: isContentVisible ? 'content' : (isConfigVisible ? 'config' : (isLogVisible ? 'log' : 'dashboard')),
+        id_guru: selGuru ? selGuru.value : '',
+        id_mapel: selMapel ? selMapel.value : '',
+        kelas: selKelas ? selKelas.value : '',
+        jam: selJam ? selJam.value : '',
+        id_jadwal: (selJam && selJam.selectedIndex >= 0 && selJam.options[selJam.selectedIndex]) ? selJam.options[selJam.selectedIndex].getAttribute('data-id') : '',
+        activeClockIn: activeClockIn || null,
+        jamMasukTimeStr: jamMasukTime ? jamMasukTime.toISOString() : null,
+        materi: document.getElementById('input-materi') ? document.getElementById('input-materi').value : '',
+        catatan: document.getElementById('input-catatan') ? document.getElementById('input-catatan').value : '',
+        absensiDraft: absensiDraft,
+        kbmNilaiState: kbmNilaiState || null,
+        isLocked: (typeof isLocked === 'boolean') ? isLocked : isLockScreenActive(),
+        savedAt: new Date().toISOString()
+      };
+
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch(e) {
+      console.warn("Gagal menyimpan state KBM:", e);
+    }
+  }
+
+  function restoreSessionState() {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (!saved) return false;
+      const state = JSON.parse(saved);
+      if (!state || !state.id_guru) return false;
+
+      // Check if session is from today (prevent yesterday stale state)
+      const savedDate = state.savedAt ? state.savedAt.split('T')[0] : '';
+      const todayStr = new Date().toISOString().split('T')[0];
+      if (savedDate && savedDate !== todayStr) {
+        localStorage.removeItem(STORAGE_KEY);
+        return false;
+      }
+
+      // Restore Guru dropdown
+      if (selGuru) selGuru.value = state.id_guru;
+      updateMapel();
+
+      setTimeout(() => {
+        if (state.id_mapel && selMapel) selMapel.value = state.id_mapel;
+        updateKelas();
+
+        setTimeout(() => {
+          if (state.kelas && selKelas) selKelas.value = state.kelas;
+          updateJam();
+
+          setTimeout(() => {
+            if (state.jam && selJam) {
+              for (let i = 0; i < selJam.options.length; i++) {
+                if (selJam.options[i].value === state.jam || selJam.options[i].value.includes(state.jam)) {
+                  selJam.selectedIndex = i;
+                  break;
+                }
+              }
+            }
+
+            if (selJam && selJam.value) btnLoad.disabled = false;
+
+            // Restore Clock-In
+            if (state.activeClockIn || state.jamMasukTimeStr) {
+              activeClockIn = state.activeClockIn || { id_guru: state.id_guru, nama_guru: state.nama_guru || state.id_guru };
+              if (state.jamMasukTimeStr) jamMasukTime = new Date(state.jamMasukTimeStr);
+              if (clockActions) clockActions.classList.add('d-none');
+              if (btnJamKeluar) btnJamKeluar.classList.remove('d-none');
+              if (selMapel) selMapel.disabled = false;
+              startProgressBar();
+            }
+
+            // Restore View & Sections
+            if (state.view === 'config' || state.view === 'content') {
+              const dashSec = document.getElementById('dashboard-section');
+              const confSec = document.getElementById('config-section');
+              const welc = document.getElementById('welcome-header');
+              const mainNav = document.getElementById('main-nav-container');
+
+              if (dashSec) dashSec.classList.add('d-none');
+              if (confSec) confSec.classList.remove('d-none');
+              if (welc) welc.classList.add('d-none');
+              if (mainNav) mainNav.classList.add('d-none');
+            }
+
+            if (state.view === 'content') {
+              // Trigger Santri Loading & Populate
+              if (btnLoad) {
+                btnLoad.click();
+              }
+              
+              setTimeout(() => {
+                const inpMateri = document.getElementById('input-materi');
+                const inpCatatan = document.getElementById('input-catatan');
+                if (inpMateri && state.materi) inpMateri.value = state.materi;
+                if (inpCatatan && state.catatan) inpCatatan.value = state.catatan;
+                if (state.kbmNilaiState) kbmNilaiState = state.kbmNilaiState;
+
+                // Restore individual checks & notes
+                if (state.absensiDraft) {
+                  for (let sId in state.absensiDraft) {
+                    const item = state.absensiDraft[sId];
+                    const radio = document.querySelector(`input[name="abs_${sId}"][value="${item.status}"]`);
+                    if (radio) radio.checked = true;
+                    const inpNote = document.getElementById(`catatan_${sId}`);
+                    if (inpNote && item.catatan) inpNote.value = item.catatan;
+                  }
+                }
+              }, 1000);
+            }
+
+            if (state.isLocked) {
+              showLockScreen(false);
+            }
+          }, 60);
+        }, 60);
+      }, 60);
+
+      return true;
+    } catch(e) {
+      console.warn("Gagal me-restore state KBM:", e);
+      return false;
+    }
+  }
+
+  function clearSessionState() {
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch(e) {}
+  }
+
+  function showLockScreen(save = true) {
+    if (!lockOverlay) return;
+    
+    // Populate session details into lock screen
+    const guruNama = selGuru && selGuru.selectedIndex >= 0 && selGuru.options[selGuru.selectedIndex]
+      ? selGuru.options[selGuru.selectedIndex].text 
+      : (activeClockIn ? activeClockIn.nama_guru : '-');
+    const mapelNama = selMapel && selMapel.selectedIndex >= 0 && selMapel.options[selMapel.selectedIndex]
+      ? selMapel.options[selMapel.selectedIndex].text 
+      : '-';
+    const kelasNama = selKelas ? selKelas.value : '-';
+    
+    const lockInfoGuru = document.getElementById('lock-info-guru');
+    const lockInfoMapel = document.getElementById('lock-info-mapel');
+    const lockInfoStatus = document.getElementById('lock-info-status');
+    const lockInfoProgress = document.getElementById('lock-info-progress');
+
+    if (lockInfoGuru) lockInfoGuru.innerText = (guruNama && !guruNama.includes('--')) ? guruNama : 'Belum Dipilih';
+    if (lockInfoMapel) lockInfoMapel.innerText = (mapelNama && !mapelNama.includes('--')) ? `${mapelNama} (${kelasNama || '-'})` : 'Belum Ada Sesi';
+    
+    if (lockInfoStatus) {
+      if (activeClockIn || jamMasukTime) {
+        lockInfoStatus.className = 'badge bg-success';
+        lockInfoStatus.innerText = 'Jam Masuk Aktif';
+      } else {
+        lockInfoStatus.className = 'badge bg-secondary';
+        lockInfoStatus.innerText = 'Belum Jam Masuk';
+      }
+    }
+
+    if (lockInfoProgress) {
+      const tbody = document.getElementById('santri-tbody');
+      if (tbody) {
+        const rows = tbody.querySelectorAll('tr');
+        const checked = tbody.querySelectorAll('input[type="radio"]:checked').length;
+        lockInfoProgress.innerText = rows.length > 0 ? `${checked} / ${rows.length} Santri` : '-';
+      } else {
+        lockInfoProgress.innerText = '-';
+      }
+    }
+
+    lockOverlay.classList.remove('d-none');
+    if (save) saveSessionState(true);
+  }
+
+  function hideLockScreen() {
+    if (!lockOverlay) return;
+    lockOverlay.classList.add('d-none');
+    saveSessionState(false);
+  }
+
+  if (btnLockScreen) {
+    btnLockScreen.addEventListener('click', () => showLockScreen(true));
+  }
+  if (btnUnlockKbm) {
+    btnUnlockKbm.addEventListener('click', () => hideLockScreen());
+  }
+
+  // Hook auto-save on inputs
+  const inpMateriEl = document.getElementById('input-materi');
+  const inpCatatanEl = document.getElementById('input-catatan');
+  if (inpMateriEl) inpMateriEl.addEventListener('input', () => saveSessionState());
+  if (inpCatatanEl) inpCatatanEl.addEventListener('input', () => saveSessionState());
+  if (selGuru) selGuru.addEventListener('change', () => saveSessionState());
+  if (selMapel) selMapel.addEventListener('change', () => saveSessionState());
+  if (selKelas) selKelas.addEventListener('change', () => saveSessionState());
+  if (selJam) selJam.addEventListener('change', () => saveSessionState());
+
+  // Listeners for page visibility & screen lock
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') {
+      saveSessionState(false);
+    } else if (document.visibilityState === 'visible') {
+      if (jamMasukTime) startProgressBar();
+      updateClock();
+    }
+  });
+
+  window.addEventListener('pagehide', () => saveSessionState(false));
+  window.addEventListener('pageshow', () => {
+    if (jamMasukTime) startProgressBar();
+  });
 
 });
