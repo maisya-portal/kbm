@@ -117,6 +117,7 @@ document.addEventListener('DOMContentLoaded', () => {
         Swal.fire('Offline', 'Tidak dapat terhubung ke server (Offline Mode). Data jadwal tidak dapat dimuat.', 'warning');
         selGuru.innerHTML = '<option value="" selected disabled>-- Offline --</option>';
       }
+    }
     showLoading(false);
   }
 
