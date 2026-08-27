@@ -15,7 +15,7 @@
   
   <!-- CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=28">
   
   <!-- PWA Manifest -->
   <link rel="manifest" href="manifest.json?v=3">
@@ -639,12 +639,13 @@
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  <script src="app.js"></script>
+  <script src="app.js?v=28"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function() {
-        navigator.serviceWorker.register('./sw.js').then(function(registration) {
+        navigator.serviceWorker.register('./sw.js?v=28').then(function(registration) {
           console.log('ServiceWorker registration successful with scope: ', registration.scope);
+          registration.update();
         }, function(err) {
           console.log('ServiceWorker registration failed: ', err);
         });

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'presensi-kbm-v26';
+const CACHE_NAME = 'presensi-kbm-v28';
 const urlsToCache = [
   './',
   './index.html',
@@ -21,28 +21,50 @@ self.addEventListener('install', event => {
   );
 });
 
+// Network-First with Cache Fallback for dynamic/local JS & HTML
 self.addEventListener('fetch', event => {
+  // Only handle GET requests
+  if (event.request.method !== 'GET') return;
+
+  const url = new URL(event.request.url);
+
+  // Network-First for app.js, index.html, and local assets
+  if (url.origin === location.origin) {
+    event.respondWith(
+      fetch(event.request)
+        .then(response => {
+          if (response && response.status === 200) {
+            const responseClone = response.clone();
+            caches.open(CACHE_NAME).then(cache => {
+              cache.put(event.request, responseClone);
+            });
+          }
+          return response;
+        })
+        .catch(() => {
+          return caches.match(event.request);
+        })
+    );
+    return;
+  }
+
+  // Cache-First for static external CDN resources (bootstrap, icons, etc.)
   event.respondWith(
     caches.match(event.request)
-      .then(response => {
-        if (response) {
-          return response;
+      .then(cachedResponse => {
+        if (cachedResponse) {
+          return cachedResponse;
         }
-        return fetch(event.request).then(
-          function(response) {
-            // Check if we received a valid response
-            if(!response || response.status !== 200 || response.type !== 'basic') {
-              return response;
-            }
-
-            var responseToCache = response.clone();
-            caches.open(CACHE_NAME)
-              .then(function(cache) {
-                cache.put(event.request, responseToCache);
-              });
+        return fetch(event.request).then(response => {
+          if (!response || response.status !== 200 || response.type !== 'basic' && response.type !== 'cors') {
             return response;
           }
-        );
+          const responseClone = response.clone();
+          caches.open(CACHE_NAME).then(cache => {
+            cache.put(event.request, responseClone);
+          });
+          return response;
+        });
       })
   );
 });
@@ -61,4 +83,3 @@ self.addEventListener('activate', event => {
     }).then(() => self.clients.claim())
   );
 });
-
