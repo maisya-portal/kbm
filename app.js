@@ -619,7 +619,15 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    const santriList = item.catatan_santri || (window.santriDetailsCache && window.santriDetailsCache[idJurnal]) || [];
+    const rawSantriList = item.catatan_santri || (window.santriDetailsCache && window.santriDetailsCache[idJurnal]) || [];
+    const santriMap = new Map();
+    rawSantriList.forEach((s, idx) => {
+      const sId = String(s.nis || s.id_santri || s.nama || `S_${idx}`).trim();
+      if (!santriMap.has(sId)) {
+        santriMap.set(sId, s);
+      }
+    });
+    const santriList = Array.from(santriMap.values());
     if (santriList.length === 0) {
       Swal.fire('Info', 'Tidak ada data rincian santri untuk sesi ini.', 'info');
       return;
@@ -768,7 +776,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const tbody = document.getElementById('edit-log-tbody-santri');
     tbody.innerHTML = '';
 
-    const santriList = item.catatan_santri || [];
+    const rawSantriList = item.catatan_santri || [];
+    const santriMap = new Map();
+    rawSantriList.forEach((s, idx) => {
+      const sId = String(s.nis || s.id_santri || s.nama || `S_${idx}`).trim();
+      if (!santriMap.has(sId)) {
+        santriMap.set(sId, s);
+      }
+    });
+    const santriList = Array.from(santriMap.values());
+
     if (santriList.length === 0) {
       tbody.innerHTML = '<tr><td colspan="5" class="text-center py-3 text-muted">Tidak ada rincian santri pada sesi ini.</td></tr>';
     } else {
@@ -1055,11 +1072,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const selectedKelasName = selKelas.value;
     const targetNormKelas = normalizeKelas(selectedKelasName);
     
-    // Filter santri asli dari database berdasarkan kelas dengan normalisasi cerdas
-    let generatedSantri = allSantri.filter(s => {
+    // Filter santri asli dari database berdasarkan kelas dengan normalisasi cerdas & deduplikasi ketat
+    const santriMap = new Map();
+    allSantri.forEach(s => {
       const k1 = normalizeKelas(s.kelas || s.Kelas);
-      return k1 === targetNormKelas || String(s.kelas) === String(selectedKelasName) || String(s.Kelas) === String(selectedKelasName);
+      const isClassMatch = (k1 === targetNormKelas || String(s.kelas) === String(selectedKelasName) || String(s.Kelas) === String(selectedKelasName));
+      if (isClassMatch) {
+        const nis = String(s.nis || s.NIS || s.id_santri || s.ID_Santri || '').trim();
+        const nama = (s.nama || s.Nama_Lengkap || s.Nama_Santri || s.Nama || '').trim();
+        const key = nis ? `NIS_${nis}` : `NAMA_${nama.toLowerCase()}`;
+        if (key && !santriMap.has(key)) {
+          santriMap.set(key, s);
+        }
+      }
     });
+    
+    let generatedSantri = Array.from(santriMap.values());
     
     // Urutkan secara alfabetis berdasarkan nama santri
     generatedSantri.sort((a, b) => {
@@ -1068,7 +1096,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return nA.localeCompare(nB, 'id', { sensitivity: 'base' });
     });
     
-    // Jika tidak ada santri ditemukan, berikan fallback (opsional, tapi sebaiknya kosong saja)
+    // Jika tidak ada santri ditemukan, berikan fallback
     if(generatedSantri.length === 0) {
       console.warn("Tidak ada santri ditemukan untuk kelas " + selectedKelasName);
     }
