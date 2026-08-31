@@ -1233,6 +1233,126 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnOpenModalNilai = document.getElementById('btn-open-modal-nilai');
   const btnModalApplyAllNilai = document.getElementById('btn-modal-apply-all-nilai');
   const btnModalSaveNilai = document.getElementById('btn-modal-save-nilai');
+  const inputModalSearchNilai = document.getElementById('modal-nilai-search');
+  const btnClearSearchNilai = document.getElementById('btn-clear-search-nilai');
+  const modalNilaiTbody = document.getElementById('modal-nilai-tbody');
+
+  function escapeHtmlSafe(str) {
+    if (!str && str !== 0) return '';
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function updateModalNilaiCounters(shownCount) {
+    if (!modalNilaiTbody) return;
+    const total = (currentLoadedSantri && currentLoadedSantri.length) ? currentLoadedSantri.length : 0;
+    const allInputs = modalNilaiTbody.querySelectorAll('.input-modal-nilai');
+    let filled = 0;
+    allInputs.forEach(inp => {
+      if (inp.value.trim() !== '') filled++;
+    });
+
+    const shown = (shownCount !== undefined) ? shownCount : total;
+    const countInfoEl = document.getElementById('modal-nilai-count-info');
+    if (countInfoEl) {
+      if (shown === total) {
+        countInfoEl.innerHTML = `<i class="bi bi-people me-1 text-primary"></i>Total: <b>${total}</b> santri`;
+      } else {
+        countInfoEl.innerHTML = `<i class="bi bi-funnel me-1 text-warning"></i>Menampilkan: <b>${shown}</b> dari ${total} santri`;
+      }
+    }
+
+    const filledInfoEl = document.getElementById('modal-nilai-filled-info');
+    if (filledInfoEl) {
+      filledInfoEl.innerHTML = `<i class="bi bi-check2-all me-1 text-success"></i><b>${filled}</b> dari ${total} dinilai`;
+    }
+  }
+
+  function filterModalNilaiSantri() {
+    if (!modalNilaiTbody) return;
+    const query = inputModalSearchNilai ? inputModalSearchNilai.value.trim().toLowerCase() : '';
+    
+    if (btnClearSearchNilai) {
+      if (query !== '') {
+        btnClearSearchNilai.classList.remove('d-none');
+      } else {
+        btnClearSearchNilai.classList.add('d-none');
+      }
+    }
+
+    const rows = modalNilaiTbody.querySelectorAll('tr.row-santri-nilai');
+    let matchCount = 0;
+
+    rows.forEach(tr => {
+      const nama = tr.getAttribute('data-nama') || '';
+      const nis = tr.getAttribute('data-nis') || '';
+      const isMatch = !query || nama.includes(query) || nis.includes(query);
+
+      if (isMatch) {
+        tr.style.display = '';
+        matchCount++;
+      } else {
+        tr.style.display = 'none';
+      }
+    });
+
+    let emptyRow = document.getElementById('modal-nilai-empty-search');
+    if (matchCount === 0) {
+      if (!emptyRow) {
+        emptyRow = document.createElement('tr');
+        emptyRow.id = 'modal-nilai-empty-search';
+        emptyRow.innerHTML = `
+          <td colspan="4" class="text-center py-4 text-muted">
+            <i class="bi bi-person-x fs-3 text-secondary d-block mb-1"></i>
+            Santri dengan kata kunci "<b>${escapeHtmlSafe(query)}</b>" tidak ditemukan.
+          </td>
+        `;
+        modalNilaiTbody.appendChild(emptyRow);
+      } else {
+        emptyRow.style.display = '';
+        emptyRow.innerHTML = `
+          <td colspan="4" class="text-center py-4 text-muted">
+            <i class="bi bi-person-x fs-3 text-secondary d-block mb-1"></i>
+            Santri dengan kata kunci "<b>${escapeHtmlSafe(query)}</b>" tidak ditemukan.
+          </td>
+        `;
+      }
+    } else if (emptyRow) {
+      emptyRow.style.display = 'none';
+    }
+
+    updateModalNilaiCounters(matchCount);
+  }
+
+  if (inputModalSearchNilai) {
+    inputModalSearchNilai.addEventListener('input', filterModalNilaiSantri);
+    inputModalSearchNilai.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        // Fokuskan ke input nilai santri pertama yang tampak
+        const firstVisibleRow = modalNilaiTbody.querySelector('tr.row-santri-nilai:not([style*="display: none"])');
+        if (firstVisibleRow) {
+          const firstInp = firstVisibleRow.querySelector('.input-modal-nilai');
+          if (firstInp) {
+            firstInp.focus();
+            firstInp.select();
+          }
+        }
+      } else if (e.key === 'Escape') {
+        inputModalSearchNilai.value = '';
+        filterModalNilaiSantri();
+      }
+    });
+  }
+
+  if (btnClearSearchNilai) {
+    btnClearSearchNilai.addEventListener('click', () => {
+      if (inputModalSearchNilai) {
+        inputModalSearchNilai.value = '';
+        filterModalNilaiSantri();
+        inputModalSearchNilai.focus();
+      }
+    });
+  }
 
   if (btnOpenModalNilai) {
     btnOpenModalNilai.addEventListener('click', () => {
@@ -1248,29 +1368,93 @@ document.addEventListener('DOMContentLoaded', () => {
         modalMateri.value = inpMateri.value;
       }
 
-      const modalTbody = document.getElementById('modal-nilai-tbody');
-      modalTbody.innerHTML = '';
+      if (inputModalSearchNilai) {
+        inputModalSearchNilai.value = '';
+      }
+      if (btnClearSearchNilai) {
+        btnClearSearchNilai.classList.add('d-none');
+      }
+
+      modalNilaiTbody.innerHTML = '';
 
       currentLoadedSantri.forEach((s, idx) => {
         const existing = (kbmNilaiState.nilai_santri && kbmNilaiState.nilai_santri[s.id]) || { nilai: '', catatan: '' };
         const tr = document.createElement('tr');
+        tr.className = 'row-santri-nilai';
+        tr.setAttribute('data-id', s.id);
+        tr.setAttribute('data-nama', (s.nama || '').toLowerCase());
+        tr.setAttribute('data-nis', (s.nis || '').toLowerCase());
         tr.innerHTML = `
-          <td class="text-muted small">${idx + 1}</td>
-          <td class="fw-medium">${s.nama}</td>
+          <td class="text-muted small text-center">${idx + 1}</td>
           <td>
-            <input type="number" class="form-control form-control-sm text-center input-modal-nilai" data-id="${s.id}" value="${existing.nilai || ''}" placeholder="0-100" min="0" max="100">
+            <div class="fw-semibold text-dark">${escapeHtmlSafe(s.nama)}</div>
+            ${s.nis ? `<div class="text-muted small" style="font-size: 11px;">NIS: ${escapeHtmlSafe(s.nis)}</div>` : ''}
           </td>
           <td>
-            <input type="text" class="form-control form-control-sm input-modal-catatan" data-id="${s.id}" value="${existing.catatan || ''}" placeholder="Catatan...">
+            <input type="number" class="form-control form-control-sm text-center input-modal-nilai" data-id="${s.id}" data-idx="${idx}" value="${existing.nilai || ''}" placeholder="0-100" min="0" max="100">
+          </td>
+          <td>
+            <input type="text" class="form-control form-control-sm input-modal-catatan" data-id="${s.id}" value="${escapeHtmlSafe(existing.catatan || '')}" placeholder="Catatan...">
           </td>
         `;
-        modalTbody.appendChild(tr);
+        modalNilaiTbody.appendChild(tr);
       });
+
+      // Pasang event listener pada setiap input nilai (live counter & navigasi keyboard)
+      const allNilaiInps = modalNilaiTbody.querySelectorAll('.input-modal-nilai');
+      allNilaiInps.forEach(inp => {
+        inp.addEventListener('input', () => {
+          updateModalNilaiCounters();
+        });
+
+        inp.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === 'ArrowDown') {
+            e.preventDefault();
+            // Navigasi ke input santri tampak berikutnya
+            const currentTr = inp.closest('tr.row-santri-nilai');
+            let nextTr = currentTr ? currentTr.nextElementSibling : null;
+            while (nextTr) {
+              if (nextTr.classList.contains('row-santri-nilai') && nextTr.style.display !== 'none') {
+                const nextInp = nextTr.querySelector('.input-modal-nilai');
+                if (nextInp) {
+                  nextInp.focus();
+                  nextInp.select();
+                }
+                break;
+              }
+              nextTr = nextTr.nextElementSibling;
+            }
+          } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            // Navigasi ke input santri tampak sebelumnya
+            const currentTr = inp.closest('tr.row-santri-nilai');
+            let prevTr = currentTr ? currentTr.previousElementSibling : null;
+            while (prevTr) {
+              if (prevTr.classList.contains('row-santri-nilai') && prevTr.style.display !== 'none') {
+                const prevInp = prevTr.querySelector('.input-modal-nilai');
+                if (prevInp) {
+                  prevInp.focus();
+                  prevInp.select();
+                }
+                break;
+              }
+              prevTr = prevTr.previousElementSibling;
+            }
+          }
+        });
+      });
+
+      updateModalNilaiCounters(currentLoadedSantri.length);
 
       const modalEl = document.getElementById('modalNilaiKBM');
       if (modalEl) {
-        const myModal = new bootstrap.Modal(modalEl);
+        const myModal = bootstrap.Modal.getOrCreateInstance(modalEl);
         myModal.show();
+        
+        // Auto-fokus ke search bar setelah modal terbuka
+        setTimeout(() => {
+          if (inputModalSearchNilai) inputModalSearchNilai.focus();
+        }, 400);
       }
     });
   }
@@ -1278,9 +1462,38 @@ document.addEventListener('DOMContentLoaded', () => {
   if (btnModalApplyAllNilai) {
     btnModalApplyAllNilai.addEventListener('click', () => {
       const val = document.getElementById('modal-nilai-default').value;
-      if (val === '') return;
-      document.querySelectorAll('.input-modal-nilai').forEach(inp => {
-        inp.value = val;
+      if (val === '') {
+        Swal.fire('Perhatian', 'Masukkan angka nilai (0-100) terlebih dahulu.', 'info');
+        return;
+      }
+      
+      const numVal = parseInt(val, 10);
+      if (isNaN(numVal) || numVal < 0 || numVal > 100) {
+        Swal.fire('Nilai Tidak Valid', 'Nilai harus berupa angka antara 0 hingga 100.', 'warning');
+        return;
+      }
+
+      // Terapkan ke santri yang sedang tampak / terfilter
+      let appliedCount = 0;
+      modalNilaiTbody.querySelectorAll('tr.row-santri-nilai').forEach(tr => {
+        if (tr.style.display !== 'none') {
+          const inp = tr.querySelector('.input-modal-nilai');
+          if (inp) {
+            inp.value = numVal;
+            appliedCount++;
+          }
+        }
+      });
+
+      updateModalNilaiCounters();
+
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'success',
+        title: `Nilai ${numVal} diterapkan ke ${appliedCount} santri`,
+        showConfirmButton: false,
+        timer: 1500
       });
     });
   }
@@ -1295,9 +1508,10 @@ document.addEventListener('DOMContentLoaded', () => {
       kbmNilaiState.nilai_santri = {};
 
       let filledCount = 0;
-      document.querySelectorAll('.input-modal-nilai').forEach(inp => {
+      // Ambil seluruh input santri (baik yang tampak maupun yang sedang terfilter)
+      modalNilaiTbody.querySelectorAll('.input-modal-nilai').forEach(inp => {
         const sId = inp.getAttribute('data-id');
-        const cInp = document.querySelector(`.input-modal-catatan[data-id="${sId}"]`);
+        const cInp = modalNilaiTbody.querySelector(`.input-modal-catatan[data-id="${sId}"]`);
         const val = inp.value.trim();
         if (val !== '') filledCount++;
         kbmNilaiState.nilai_santri[sId] = {
@@ -1319,14 +1533,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const modalEl = document.getElementById('modalNilaiKBM');
       if (modalEl) {
-        bootstrap.Modal.getInstance(modalEl).hide();
+        const modalInstance = bootstrap.Modal.getInstance(modalEl);
+        if (modalInstance) modalInstance.hide();
       }
 
       Swal.fire({
         title: 'Penilaian Disimpan',
-        text: `${filledCount} santri telah diberikan nilai. Nilai akan dikirim saat Anda menekan Simpan KBM.`,
+        text: `${filledCount} santri telah diberikan nilai. Nilai akan otomatis dikirim saat Anda menekan Simpan KBM.`,
         icon: 'success',
-        timer: 1800,
+        timer: 2000,
         showConfirmButton: false
       });
     });

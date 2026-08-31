@@ -445,21 +445,45 @@
             </div>
           </div>
 
-          <div class="d-flex justify-content-between align-items-center mb-3 p-2 bg-light rounded-3">
-            <span class="small fw-semibold text-muted">Isi Cepat Semua Santri:</span>
-            <div class="d-flex align-items-center gap-2">
-              <input type="number" id="modal-nilai-default" class="form-control form-control-sm text-center" placeholder="0-100" min="0" max="100" style="width: 90px;">
-              <button type="button" class="btn btn-sm btn-primary rounded-pill px-3" id="btn-modal-apply-all-nilai">
-                Terapkan Semua
-              </button>
+          <div class="row g-2 align-items-center mb-3">
+            <div class="col-md-6 col-12">
+              <div class="d-flex justify-content-between align-items-center p-2 bg-light rounded-3 h-100 border">
+                <span class="small fw-semibold text-muted text-nowrap me-2">
+                  <i class="bi bi-magic me-1 text-primary"></i>Isi Cepat:
+                </span>
+                <div class="d-flex align-items-center gap-1">
+                  <input type="number" id="modal-nilai-default" class="form-control form-control-sm text-center" placeholder="0-100" min="0" max="100" style="width: 80px;">
+                  <button type="button" class="btn btn-sm btn-primary rounded-pill px-3 py-1 text-nowrap fw-semibold" id="btn-modal-apply-all-nilai" style="font-size: 12px;">
+                    Terapkan
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6 col-12">
+              <div class="input-group input-group-sm h-100">
+                <span class="input-group-text bg-light text-muted border"><i class="bi bi-search"></i></span>
+                <input type="text" id="modal-nilai-search" class="form-control border" placeholder="Cari nama santri / NIS..." autocomplete="off">
+                <button class="btn btn-outline-secondary d-none border" type="button" id="btn-clear-search-nilai" title="Reset pencarian">
+                  <i class="bi bi-x-lg"></i>
+                </button>
+              </div>
             </div>
           </div>
 
+          <div class="d-flex justify-content-between align-items-center mb-2 px-1">
+            <span class="small text-muted" id="modal-nilai-count-info">
+              <i class="bi bi-people me-1 text-primary"></i>Memuat santri...
+            </span>
+            <span class="small fw-semibold text-success" id="modal-nilai-filled-info">
+              <i class="bi bi-check2-all me-1"></i>0 dinilai
+            </span>
+          </div>
+
           <div class="table-responsive" style="max-height: 350px;">
-            <table class="table table-sm align-middle table-hover mb-0">
-              <thead class="table-light text-muted small position-sticky top-0">
+            <table class="table table-sm align-middle table-hover mb-0" id="table-modal-nilai">
+              <thead class="table-light text-muted small position-sticky top-0" style="z-index: 2;">
                 <tr>
-                  <th width="40">No</th>
+                  <th width="40" class="text-center">No</th>
                   <th>Nama Santri</th>
                   <th width="110" class="text-center">Nilai (0-100)</th>
                   <th>Catatan Penilaian (Opsional)</th>
