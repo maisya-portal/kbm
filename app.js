@@ -2344,4 +2344,171 @@ document.addEventListener('DOMContentLoaded', () => {
     if (jamMasukTime) startProgressBar();
   });
 
+  // Check and show install banner on start if not standalone & not dismissed
+  setTimeout(() => {
+    const isStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+    const banner = document.getElementById('pwa-install-banner');
+    if (banner && !sessionStorage.getItem('pwa_banner_dismissed') && !isStandaloneMode) {
+      banner.classList.remove('d-none');
+    }
+  }, 1200);
+
 });
+
+// ==================== PWA INSTALLATION MANAGER ====================
+let deferredPwaPrompt = null;
+const isAppStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  // Prevent default mini-infobar or auto-prompt
+  e.preventDefault();
+  // Stash the event so it can be triggered later
+  deferredPwaPrompt = e;
+  console.log('[PWA] beforeinstallprompt event captured successfully!');
+  
+  const btnInstall = document.getElementById('btn-install-pwa');
+  if (btnInstall) {
+    btnInstall.classList.remove('d-none');
+  }
+  
+  const banner = document.getElementById('pwa-install-banner');
+  if (banner && !sessionStorage.getItem('pwa_banner_dismissed') && !isAppStandalone) {
+    banner.classList.remove('d-none');
+  }
+});
+
+window.addEventListener('appinstalled', () => {
+  console.log('[PWA] App successfully installed!');
+  deferredPwaPrompt = null;
+  const btnInstall = document.getElementById('btn-install-pwa');
+  if (btnInstall) {
+    btnInstall.innerHTML = '<i class="bi bi-check-circle-fill text-success"></i> <span class="d-none d-sm-inline text-success">Terpasang</span>';
+    btnInstall.classList.remove('btn-outline-primary');
+    btnInstall.classList.add('btn-light');
+  }
+  const banner = document.getElementById('pwa-install-banner');
+  if (banner) banner.classList.add('d-none');
+  
+  if (typeof Swal !== 'undefined') {
+    Swal.fire({
+      title: 'Aplikasi Terpasang!',
+      text: 'Presensi KBM kini telah terpasang di layar utama perangkat Anda.',
+      icon: 'success',
+      timer: 3000,
+      showConfirmButton: false
+    });
+  }
+});
+
+window.triggerPwaInstall = async function() {
+  if (isAppStandalone) {
+    if (typeof Swal !== 'undefined') {
+      Swal.fire({
+        title: 'Aplikasi Sudah Terpasang',
+        text: 'Anda sedang membuka Presensi KBM dalam mode aplikasi mandiri (PWA).',
+        icon: 'info',
+        confirmButtonText: 'OK'
+      });
+    } else {
+      alert('Aplikasi sudah terpasang di perangkat Anda.');
+    }
+    return;
+  }
+
+  if (deferredPwaPrompt) {
+    try {
+      deferredPwaPrompt.prompt();
+      const choiceResult = await deferredPwaPrompt.userChoice;
+      console.log('[PWA] User choice outcome:', choiceResult.outcome);
+      if (choiceResult.outcome === 'accepted') {
+        deferredPwaPrompt = null;
+        const banner = document.getElementById('pwa-install-banner');
+        if (banner) banner.classList.add('d-none');
+      }
+    } catch(err) {
+      console.warn('[PWA] Native prompt error, showing guide modal:', err);
+      openPwaInstallGuideModal();
+    }
+  } else {
+    // Fallback: show interactive modal guide for browser without native prompt
+    openPwaInstallGuideModal();
+  }
+};
+
+window.tryNativeInstallPrompt = async function() {
+  if (deferredPwaPrompt) {
+    try {
+      deferredPwaPrompt.prompt();
+      const choiceResult = await deferredPwaPrompt.userChoice;
+      if (choiceResult.outcome === 'accepted') {
+        deferredPwaPrompt = null;
+        const modalEl = document.getElementById('modalPwaInstallGuide');
+        if (modalEl) {
+          const bsModal = bootstrap.Modal.getInstance(modalEl);
+          if (bsModal) bsModal.hide();
+        }
+      }
+    } catch(e) {
+      console.error(e);
+    }
+  } else {
+    if (typeof Swal !== 'undefined') {
+      Swal.fire({
+        title: 'Browser Tidak Mendukung Pemasangan Otomatis',
+        text: 'Silakan ikuti 3 langkah manual di atas sesuai browser/perangkat yang Anda gunakan.',
+        icon: 'info',
+        confirmButtonText: 'Saya Mengerti'
+      });
+    } else {
+      alert('Silakan ikuti petunjuk manual di atas untuk browser Anda.');
+    }
+  }
+};
+
+window.dismissPwaBanner = function() {
+  const banner = document.getElementById('pwa-install-banner');
+  if (banner) banner.classList.add('d-none');
+  sessionStorage.setItem('pwa_banner_dismissed', 'true');
+};
+
+function detectPwaPlatform() {
+  const ua = navigator.userAgent || navigator.vendor || window.opera || '';
+  if (/iPad|iPhone|iPod/.test(ua) && !window.MSStream) {
+    return 'ios';
+  } else if (/Android/.test(ua)) {
+    return 'android';
+  }
+  return 'desktop';
+}
+
+window.openPwaInstallGuideModal = function() {
+  const modalEl = document.getElementById('modalPwaInstallGuide');
+  if (!modalEl) return;
+  
+  const platform = detectPwaPlatform();
+  
+  // Activate platform tab
+  const tabAndroid = document.getElementById('tab-pwa-android');
+  const tabIos = document.getElementById('tab-pwa-ios');
+  const tabDesktop = document.getElementById('tab-pwa-desktop');
+  const paneAndroid = document.getElementById('pane-pwa-android');
+  const paneIos = document.getElementById('pane-pwa-ios');
+  const paneDesktop = document.getElementById('pane-pwa-desktop');
+  
+  [tabAndroid, tabIos, tabDesktop].forEach(t => { if(t) t.classList.remove('active'); });
+  [paneAndroid, paneIos, paneDesktop].forEach(p => { if(p) p.classList.remove('show', 'active'); });
+  
+  if (platform === 'ios') {
+    if (tabIos) tabIos.classList.add('active');
+    if (paneIos) paneIos.classList.add('show', 'active');
+  } else if (platform === 'android') {
+    if (tabAndroid) tabAndroid.classList.add('active');
+    if (paneAndroid) paneAndroid.classList.add('show', 'active');
+  } else {
+    if (tabDesktop) tabDesktop.classList.add('active');
+    if (paneDesktop) paneDesktop.classList.add('show', 'active');
+  }
+  
+  const bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+  bsModal.show();
+};
