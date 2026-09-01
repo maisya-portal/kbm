@@ -2512,3 +2512,32 @@ window.openPwaInstallGuideModal = function() {
   const bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
   bsModal.show();
 };
+
+// Check if opened inside In-App Browser (WhatsApp, Telegram, Line, FB, IG Webview)
+function isInAppBrowser() {
+  const ua = navigator.userAgent || navigator.vendor || window.opera || '';
+  return (ua.indexOf('FBAN') > -1) || 
+         (ua.indexOf('FBAV') > -1) || 
+         (ua.indexOf('Instagram') > -1) || 
+         (ua.indexOf('Line') > -1) || 
+         (ua.indexOf('WhatsApp') > -1) ||
+         (ua.indexOf('Telegram') > -1) ||
+         (ua.indexOf('MicroMessenger') > -1);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  if (isInAppBrowser() && !sessionStorage.getItem('inapp_warned')) {
+    setTimeout(() => {
+      sessionStorage.setItem('inapp_warned', '1');
+      if (typeof Swal !== 'undefined') {
+        Swal.fire({
+          title: 'Buka di Browser Utama',
+          html: 'Anda sedang membuka Presensi KBM melalui browser internal chat.<br><br>Untuk pengalaman terbaik & menyimpan ke layar utama HP, silakan ketuk menu titik tiga (<b>⋮</b>) di pojok kanan atas lalu pilih <b>"Buka di Browser / Chrome / Safari"</b>.',
+          icon: 'info',
+          confirmButtonText: 'Baik, Saya Mengerti'
+        });
+      }
+    }, 1500);
+  }
+});
+
