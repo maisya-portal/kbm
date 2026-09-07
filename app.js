@@ -121,6 +121,32 @@ document.addEventListener('DOMContentLoaded', () => {
     showLoading(false);
   }
 
+  // Tombol Sinkronisasi Data Cepat dari Core Portal
+  const btnSyncData = document.getElementById('btn-sync-data');
+  if (btnSyncData) {
+    btnSyncData.addEventListener('click', async () => {
+      var icon = btnSyncData.querySelector('i');
+      if (icon) icon.classList.add('bi-spin');
+      showLoading(true);
+      try {
+        localStorage.removeItem('maisya_kbm_master_cache');
+        await initData();
+        Swal.fire({
+          icon: 'success',
+          title: 'Sinkronisasi Berhasil',
+          text: 'Data santri, jadwal, dan guru telah diperbarui langsung dari Core Portal.',
+          timer: 2000,
+          showConfirmButton: false
+        });
+      } catch(e) {
+        Swal.fire('Gagal', 'Sinkronisasi gagal: ' + e.message, 'error');
+      } finally {
+        if (icon) icon.classList.remove('bi-spin');
+        showLoading(false);
+      }
+    });
+  }
+
   function populateGuruDropdown(staffList, jadwals) {
     selGuru.innerHTML = '<option value="" selected disabled>-- Pilih Guru --</option>';
     
@@ -1199,6 +1225,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // Filter santri asli dari database berdasarkan kelas dengan normalisasi cerdas & deduplikasi ketat
     const santriMap = new Map();
     allSantri.forEach(s => {
+      // Filter status santri: abaikan santri Non-Aktif / Alumni / Keluar
+      const sStatus = String(s.status_aktif || s.Status_Aktif || s.status || s.Status || 'aktif').trim().toLowerCase();
+      const isAktif = sStatus === 'aktif' || sStatus === 'active' || sStatus === '1' || sStatus === '';
+      if (!isAktif) return;
+
       const k1 = normalizeKelas(s.kelas || s.Kelas);
       const isClassMatch = (k1 === targetNormKelas || String(s.kelas) === String(selectedKelasName) || String(s.Kelas) === String(selectedKelasName));
       if (isClassMatch) {
