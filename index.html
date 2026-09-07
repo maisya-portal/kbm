@@ -222,9 +222,28 @@
           
           <div class="d-flex flex-wrap align-items-center gap-2">
             <div class="d-flex align-items-center gap-1">
-              <span class="small text-muted fw-medium">Tgl:</span>
-              <input type="date" id="filter-tanggal-log" class="form-control form-control-sm shadow-none border-1" style="width: 140px;">
+              <span class="small text-muted fw-medium"><i class="bi bi-calendar-event me-1"></i>Periode:</span>
+              <select id="filter-periode-log" class="form-select form-select-sm bg-light shadow-none w-auto border-0 fw-semibold">
+                <option value="today" selected>Hari Ini</option>
+                <option value="this_week">Pekan Ini</option>
+                <option value="last_week">Pekan Lalu</option>
+                <option value="this_month">Bulan Ini</option>
+                <option value="last_month">Bulan Lalu</option>
+                <option value="custom">Rentang Tanggal...</option>
+              </select>
             </div>
+            
+            <div id="wrapper-single-date" class="d-flex align-items-center gap-1">
+              <input type="date" id="filter-tanggal-log" class="form-control form-control-sm shadow-none border-1" style="width: 135px;" title="Pilih Tanggal Spesifik">
+            </div>
+
+            <div id="wrapper-range-tanggal" class="d-flex align-items-center gap-1 d-none">
+              <input type="date" id="filter-start-date-log" class="form-control form-control-sm shadow-none border-1" style="width: 130px;" placeholder="Mulai">
+              <span class="small text-muted">-</span>
+              <input type="date" id="filter-end-date-log" class="form-control form-control-sm shadow-none border-1" style="width: 130px;" placeholder="Sampai">
+              <button id="btn-apply-range-log" class="btn btn-sm btn-primary rounded px-2 py-1 shadow-sm" title="Terapkan Rentang"><i class="bi bi-check2"></i></button>
+            </div>
+
             <select id="filter-kelas-log" class="form-select form-select-sm bg-light shadow-none w-auto border-0">
               <option value="Semua">Semua Kelas</option>
             </select>
@@ -251,6 +270,7 @@
             <thead class="table-light text-muted small">
               <tr>
                 <th class="py-3 px-3 fw-medium border-bottom-0">No</th>
+                <th class="py-3 px-3 fw-medium border-bottom-0 text-nowrap">Tanggal & Hari</th>
                 <th class="py-3 px-3 fw-medium border-bottom-0">Jam Masuk</th>
                 <th class="py-3 px-3 fw-medium border-bottom-0 text-nowrap">Jam Keluar</th>
                 <th class="py-3 px-3 fw-medium border-bottom-0 text-nowrap">Kelas</th>

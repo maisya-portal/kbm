@@ -361,6 +361,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const logSection = document.getElementById('log-section');
   const configSection = document.getElementById('config-section');
   
+  const filterPeriodeLog = document.getElementById('filter-periode-log');
+  const wrapperSingleDate = document.getElementById('wrapper-single-date');
+  const wrapperRangeTanggal = document.getElementById('wrapper-range-tanggal');
+  const filterStartDateLog = document.getElementById('filter-start-date-log');
+  const filterEndDateLog = document.getElementById('filter-end-date-log');
+  const btnApplyRangeLog = document.getElementById('btn-apply-range-log');
   const filterTanggalLog = document.getElementById('filter-tanggal-log');
   const filterKelasLog = document.getElementById('filter-kelas-log');
   const filterStatusLog = document.getElementById('filter-status-log');
@@ -376,6 +382,73 @@ document.addEventListener('DOMContentLoaded', () => {
   if (filterTanggalLog) {
     filterTanggalLog.value = todayDateStr;
   }
+  if (filterStartDateLog) {
+    filterStartDateLog.value = todayDateStr;
+  }
+  if (filterEndDateLog) {
+    filterEndDateLog.value = todayDateStr;
+  }
+
+  function formatDateIndo(dateStr) {
+    if (!dateStr) return '-';
+    try {
+      const parts = String(dateStr).split('T')[0].split('-');
+      if (parts.length === 3) {
+        return `${parts[2]}/${parts[1]}/${parts[0]}`;
+      }
+    } catch (e) {}
+    return dateStr;
+  }
+
+  function getLogDateRange() {
+    const periode = filterPeriodeLog ? filterPeriodeLog.value : 'today';
+    const now = new Date();
+    const fmt = (d) => {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    };
+
+    if (periode === 'today') {
+      const tgl = filterTanggalLog && filterTanggalLog.value ? filterTanggalLog.value : fmt(now);
+      return { startDate: tgl, endDate: tgl, label: 'Hari Ini (' + formatDateIndo(tgl) + ')' };
+    }
+    if (periode === 'this_week') {
+      const day = now.getDay(); // 0 is Ahad
+      const diffToMonday = (day === 0 ? 6 : day - 1);
+      const monday = new Date(now);
+      monday.setDate(now.getDate() - diffToMonday);
+      const sunday = new Date(monday);
+      sunday.setDate(monday.getDate() + 6);
+      return { startDate: fmt(monday), endDate: fmt(sunday), label: `Pekan Ini (${formatDateIndo(fmt(monday))} - ${formatDateIndo(fmt(sunday))})` };
+    }
+    if (periode === 'last_week') {
+      const day = now.getDay();
+      const diffToLastMonday = (day === 0 ? 6 : day - 1) + 7;
+      const lastMonday = new Date(now);
+      lastMonday.setDate(now.getDate() - diffToLastMonday);
+      const lastSunday = new Date(lastMonday);
+      lastSunday.setDate(lastMonday.getDate() + 6);
+      return { startDate: fmt(lastMonday), endDate: fmt(lastSunday), label: `Pekan Lalu (${formatDateIndo(fmt(lastMonday))} - ${formatDateIndo(fmt(lastSunday))})` };
+    }
+    if (periode === 'this_month') {
+      const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+      const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      return { startDate: fmt(firstDay), endDate: fmt(lastDay), label: `Bulan Ini (${formatDateIndo(fmt(firstDay))} - ${formatDateIndo(fmt(lastDay))})` };
+    }
+    if (periode === 'last_month') {
+      const firstDay = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const lastDay = new Date(now.getFullYear(), now.getMonth(), 0);
+      return { startDate: fmt(firstDay), endDate: fmt(lastDay), label: `Bulan Lalu (${formatDateIndo(fmt(firstDay))} - ${formatDateIndo(fmt(lastDay))})` };
+    }
+    if (periode === 'custom') {
+      const start = filterStartDateLog && filterStartDateLog.value ? filterStartDateLog.value : fmt(now);
+      const end = filterEndDateLog && filterEndDateLog.value ? filterEndDateLog.value : fmt(now);
+      return { startDate: start, endDate: end, label: `${formatDateIndo(start)} s/d ${formatDateIndo(end)}` };
+    }
+    return { startDate: fmt(now), endDate: fmt(now), label: formatDateIndo(fmt(now)) };
+  }
 
   if (navJadwal && navLog) {
     navJadwal.addEventListener('change', () => {
@@ -390,7 +463,7 @@ document.addEventListener('DOMContentLoaded', () => {
         dashboardSection.classList.add('d-none');
         logSection.classList.remove('d-none');
         configSection.classList.add('d-none');
-        // Fetch log for today
+        // Fetch log for current range
         if(!filterTanggalLog.value) {
            filterTanggalLog.value = todayDateStr;
         }
@@ -399,7 +472,42 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  if (filterPeriodeLog) {
+    filterPeriodeLog.addEventListener('change', () => {
+      const val = filterPeriodeLog.value;
+      if (val === 'today') {
+        if (wrapperSingleDate) wrapperSingleDate.classList.remove('d-none');
+        if (wrapperRangeTanggal) wrapperRangeTanggal.classList.add('d-none');
+      } else if (val === 'custom') {
+        if (wrapperSingleDate) wrapperSingleDate.classList.add('d-none');
+        if (wrapperRangeTanggal) wrapperRangeTanggal.classList.remove('d-none');
+        const now = new Date();
+        const fmt = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        if (!filterStartDateLog.value) {
+          const sevenDaysAgo = new Date();
+          sevenDaysAgo.setDate(now.getDate() - 7);
+          filterStartDateLog.value = fmt(sevenDaysAgo);
+        }
+        if (!filterEndDateLog.value) {
+          filterEndDateLog.value = fmt(now);
+        }
+      } else {
+        if (wrapperSingleDate) wrapperSingleDate.classList.add('d-none');
+        if (wrapperRangeTanggal) wrapperRangeTanggal.classList.add('d-none');
+      }
+      fetchLogKbm();
+    });
+  }
+
   if (filterTanggalLog) filterTanggalLog.addEventListener('change', fetchLogKbm);
+  if (btnApplyRangeLog) btnApplyRangeLog.addEventListener('click', fetchLogKbm);
+  if (filterStartDateLog) filterStartDateLog.addEventListener('change', () => {
+    if (filterPeriodeLog && filterPeriodeLog.value === 'custom') fetchLogKbm();
+  });
+  if (filterEndDateLog) filterEndDateLog.addEventListener('change', () => {
+    if (filterPeriodeLog && filterPeriodeLog.value === 'custom') fetchLogKbm();
+  });
+
   if (filterKelasLog) filterKelasLog.addEventListener('change', applyLogFilters);
   if (filterStatusLog) filterStatusLog.addEventListener('change', applyLogFilters);
   if (filterSearchLog) filterSearchLog.addEventListener('input', applyLogFilters);
@@ -407,13 +515,18 @@ document.addEventListener('DOMContentLoaded', () => {
   if (btnPrintLog) btnPrintLog.addEventListener('click', () => printLogTable());
 
   async function fetchLogKbm() {
-    if (!filterTanggalLog || !filterTanggalLog.value) return;
+    const range = getLogDateRange();
     
-    tbodyLog.innerHTML = `<tr><td colspan="10" class="text-center py-5 text-muted"><div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div> Memuat log presensi...</td></tr>`;
+    tbodyLog.innerHTML = `<tr><td colspan="11" class="text-center py-5 text-muted"><div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div> Memuat log presensi (${range.label})...</td></tr>`;
     showLoading(true);
 
     try {
-      const payload = { action: 'get_log_kbm', tanggal: filterTanggalLog.value };
+      const payload = { 
+        action: 'get_log_kbm', 
+        startDate: range.startDate, 
+        endDate: range.endDate,
+        tanggal: range.startDate 
+      };
       
       const response = await fetch("https://script.google.com/macros/s/AKfycbxWjwlc6-mXpOimodZMFvQIC8hwdGRAz78PqnYIfQgSuXKkI9fUP4hXfC5x3QUIypiT/exec?action=get_log_kbm", {
         method: 'POST',
@@ -428,12 +541,12 @@ document.addEventListener('DOMContentLoaded', () => {
         applyLogFilters();
       } else {
         Swal.fire('Error', res.message || 'Gagal memuat log.', 'error');
-        tbodyLog.innerHTML = `<tr><td colspan="10" class="text-center py-5 text-danger">Gagal memuat log presensi.</td></tr>`;
+        tbodyLog.innerHTML = `<tr><td colspan="11" class="text-center py-5 text-danger">Gagal memuat log presensi.</td></tr>`;
       }
     } catch(e) {
        console.error(e);
        Swal.fire('Error', 'Terjadi kesalahan jaringan.', 'error');
-       tbodyLog.innerHTML = `<tr><td colspan="10" class="text-center py-5 text-danger">Terjadi kesalahan jaringan.</td></tr>`;
+       tbodyLog.innerHTML = `<tr><td colspan="11" class="text-center py-5 text-danger">Terjadi kesalahan jaringan.</td></tr>`;
     } finally {
        showLoading(false);
     }
@@ -462,16 +575,18 @@ document.addEventListener('DOMContentLoaded', () => {
       filtered = filtered.filter(d => String(d.kelas) === String(kelasVal));
     }
     if (statusVal === 'Sudah Isi') {
-      filtered = filtered.filter(d => d.status_isi === true);
+      filtered = filtered.filter(d => d.status_isi === true || d.status_guru === 'Hadir');
     } else if (statusVal === 'Belum Isi') {
-      filtered = filtered.filter(d => d.status_isi !== true);
+      filtered = filtered.filter(d => d.status_isi !== true && d.status_guru !== 'Hadir');
     }
     if (searchVal) {
       filtered = filtered.filter(d => 
         (d.guru && d.guru.toLowerCase().includes(searchVal)) ||
         (d.pelajaran && d.pelajaran.toLowerCase().includes(searchVal)) ||
         (d.kelas && d.kelas.toLowerCase().includes(searchVal)) ||
-        (d.materi && d.materi.toLowerCase().includes(searchVal))
+        (d.materi && d.materi.toLowerCase().includes(searchVal)) ||
+        (d.tanggal && d.tanggal.includes(searchVal)) ||
+        (d.hari && d.hari.toLowerCase().includes(searchVal))
       );
     }
 
@@ -482,7 +597,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function updateLogStats(data) {
     const totalJadwal = data.length;
-    const terlaksana = data.filter(d => d.status_isi === true).length;
+    const terlaksana = data.filter(d => d.status_isi === true || d.status_guru === 'Hadir').length;
     const belum = totalJadwal - terlaksana;
 
     let totalSantriHadir = 0;
@@ -512,7 +627,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function renderLogTable(data) {
     if (!data || data.length === 0) {
-      tbodyLog.innerHTML = `<tr><td colspan="10" class="text-center py-5 text-muted"><div class="text-center mb-3"><i class="bi bi-calendar2-x display-4 text-light"></i></div>Tidak ada log KBM yang cocok dengan filter.</td></tr>`;
+      tbodyLog.innerHTML = `<tr><td colspan="11" class="text-center py-5 text-muted"><div class="text-center mb-3"><i class="bi bi-calendar2-x display-4 text-light"></i></div>Tidak ada log KBM yang cocok dengan filter.</td></tr>`;
       return;
     }
 
@@ -524,21 +639,21 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       let badgeMasuk = '';
-      if (item.status_isi) {
+      if (item.status_isi || item.status_guru === 'Hadir') {
          if (item.late_mins > 0) {
             badgeMasuk = `<div class="mt-1"><span class="badge bg-danger rounded-pill" style="font-size: 0.7rem;">Terlambat ${item.late_mins} mnt</span></div>`;
-         } else {
+         } else if (item.waktu && item.waktu !== '-') {
             badgeMasuk = `<div class="mt-1"><span class="badge bg-success rounded-pill" style="font-size: 0.7rem;">Tepat waktu</span></div>`;
          }
       }
 
       let badgeKeluar = '';
-      if (item.status_isi) {
-         if (item.jam_ke !== '-') {
+      if (item.status_isi || item.status_guru === 'Hadir') {
+         if (item.jam_ke && item.jam_ke !== '-') {
             if (item.over_mins > 0) {
                badgeKeluar = `<div class="mt-1"><span class="badge bg-warning text-dark rounded-pill" style="font-size: 0.7rem;">Lebih ${item.over_mins} mnt</span></div>`;
             }
-         } else {
+         } else if (item.status_isi) {
             badgeKeluar = `<div class="mt-1"><span class="badge bg-danger rounded-pill" style="font-size: 0.7rem;">Tidak mengisi</span></div>`;
          }
       }
@@ -546,6 +661,12 @@ document.addEventListener('DOMContentLoaded', () => {
       let statusHtml = '';
       if (item.status_isi) {
           statusHtml = `<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Hadir</span>`;
+      } else if (item.status_guru === 'Hadir') {
+          statusHtml = `<span class="badge bg-success bg-opacity-75 text-white" title="Guru telah hadir (Clock-in)"><i class="bi bi-check2-circle me-1"></i>Hadir (Clock-In)</span>`;
+      } else if (item.status_guru === 'Izin') {
+          statusHtml = `<span class="badge bg-info text-dark"><i class="bi bi-info-circle me-1"></i>Izin</span>`;
+      } else if (item.status_guru === 'Sakit') {
+          statusHtml = `<span class="badge bg-warning text-dark"><i class="bi bi-heart-pulse me-1"></i>Sakit</span>`;
       } else {
           statusHtml = `<span class="badge bg-secondary text-light"><i class="bi bi-dash-circle me-1"></i>Belum mengisi</span>`;
       }
@@ -553,6 +674,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td class="fw-medium">${item.no}</td>
+        <td class="text-nowrap">
+           <div class="fw-semibold text-dark small">${item.hari || '-'}, ${formatDateIndo(item.tanggal)}</div>
+        </td>
         <td>
            <span class="badge bg-light text-dark border"><i class="bi bi-clock me-1"></i>${item.waktu}</span>
            ${badgeMasuk}
