@@ -1840,10 +1840,17 @@ document.addEventListener('DOMContentLoaded', () => {
     
     showLoading(true);
     const namaGuru = selGuru.options[selGuru.selectedIndex] ? selGuru.options[selGuru.selectedIndex].text : selGuru.value;
+    const idJadwal = (selJam && selJam.selectedIndex >= 0 && selJam.options[selJam.selectedIndex]) ? (selJam.options[selJam.selectedIndex].getAttribute('data-id') || '') : '';
+    const idMapel = (selMapel && selMapel.value) ? selMapel.value : '';
+    const kelas = (selKelas && selKelas.value) ? selKelas.value : '';
+
     const payload = {
       action: 'clock_in',
       id_guru: selGuru.value,
       nama_guru: namaGuru,
+      id_jadwal: idJadwal,
+      id_mapel: idMapel,
+      kelas: kelas,
       timestamp: new Date().toISOString()
     };
     
@@ -1853,7 +1860,9 @@ document.addEventListener('DOMContentLoaded', () => {
       
       activeClockIn = {
         id_guru: payload.id_guru,
-        nama_guru: payload.nama_guru
+        nama_guru: payload.nama_guru,
+        id_jadwal: idJadwal,
+        kelas: kelas
       };
       onClockInSuccess();
     } else {
@@ -1870,7 +1879,9 @@ document.addEventListener('DOMContentLoaded', () => {
           
           activeClockIn = {
             id_guru: payload.id_guru,
-            nama_guru: payload.nama_guru
+            nama_guru: payload.nama_guru,
+            id_jadwal: idJadwal,
+            kelas: kelas
           };
           onClockInSuccess();
         } else {
