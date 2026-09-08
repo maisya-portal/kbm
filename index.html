@@ -65,7 +65,7 @@
         </div>
       </div>
       <div class="d-flex align-items-center gap-2">
-        <button id="btn-install-pwa" class="btn btn-outline-primary btn-sm rounded-pill fw-semibold shadow-sm d-flex align-items-center gap-1 px-3" onclick="triggerPwaInstall()" title="Install Aplikasi Presensi KBM">
+        <button id="btn-install-pwa" class="btn btn-outline-primary btn-sm rounded-pill fw-semibold shadow-sm d-none align-items-center gap-1 px-3" onclick="triggerPwaInstall()" title="Install Aplikasi Presensi KBM">
           <i class="bi bi-download"></i> <span class="d-none d-sm-inline">Install App</span>
         </button>
         <button id="btn-sync-data" class="btn btn-light rounded-circle shadow-sm" style="width: 40px; height: 40px;" title="Sinkronisasi Data Terbaru (Santri, Jadwal & Guru)">
@@ -117,12 +117,18 @@
 
     <!-- Main Navigation -->
     <div id="main-nav-container" class="d-flex justify-content-center mb-4">
-      <div class="btn-group shadow-sm bg-white rounded-pill p-1" role="group">
+      <div class="btn-group shadow-sm bg-white rounded-pill p-1 flex-wrap justify-content-center" role="group">
         <input type="radio" class="btn-check nav-radio" name="main-nav" id="nav-jadwal" autocomplete="off" checked>
-        <label class="btn btn-outline-primary border-0 rounded-pill px-4 fw-medium" for="nav-jadwal"><i class="bi bi-calendar-week me-2"></i>Jadwal</label>
+        <label class="btn btn-outline-primary border-0 rounded-pill px-3 px-md-4 fw-medium" for="nav-jadwal"><i class="bi bi-calendar-week me-1 me-md-2"></i>Jadwal</label>
 
         <input type="radio" class="btn-check nav-radio" name="main-nav" id="nav-log" autocomplete="off">
-        <label class="btn btn-outline-primary border-0 rounded-pill px-4 fw-medium" for="nav-log"><i class="bi bi-journal-text me-2"></i>Log Presensi</label>
+        <label class="btn btn-outline-primary border-0 rounded-pill px-3 px-md-4 fw-medium" for="nav-log"><i class="bi bi-journal-text me-1 me-md-2"></i>Log Presensi</label>
+
+        <input type="radio" class="btn-check nav-radio" name="main-nav" id="nav-rekap-absen" autocomplete="off">
+        <label class="btn btn-outline-primary border-0 rounded-pill px-3 px-md-4 fw-medium" for="nav-rekap-absen"><i class="bi bi-person-x me-1 me-md-2 text-danger"></i>Rekap Ketidakhadiran</label>
+
+        <input type="radio" class="btn-check nav-radio" name="main-nav" id="nav-catatan-kasus" autocomplete="off">
+        <label class="btn btn-outline-primary border-0 rounded-pill px-3 px-md-4 fw-medium" for="nav-catatan-kasus"><i class="bi bi-exclamation-triangle me-1 me-md-2 text-warning"></i>Catatan Permasalahan</label>
       </div>
     </div>
     
@@ -297,6 +303,353 @@
             </tbody>
           </table>
         </div>
+      </div>
+    </section>
+
+    <!-- Bagian 2: Rekap Ketidakhadiran Santri -->
+    <section id="rekap-absen-section" class="d-none mb-4 animate-fade-in">
+      <!-- Stat Cards Summary Rekap Absen -->
+      <div class="row g-3 mb-3">
+        <div class="col-6 col-md-3">
+          <div class="card border-0 shadow-sm rounded-4 p-3 bg-white text-center h-100 border-start border-4 border-primary">
+            <div class="text-muted small fw-medium mb-1"><i class="bi bi-people-fill text-primary me-1"></i> Santri Terdampak</div>
+            <div class="fs-4 fw-bold text-primary" id="rekap-stat-santri-count">0</div>
+            <small class="text-muted" style="font-size: 11px;">Pernah Tidak Hadir</small>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="card border-0 shadow-sm rounded-4 p-3 bg-white text-center h-100 border-start border-4 border-warning">
+            <div class="text-muted small fw-medium mb-1"><i class="bi bi-info-circle-fill text-warning me-1"></i> Total Izin</div>
+            <div class="fs-4 fw-bold text-warning" id="rekap-stat-total-izin">0</div>
+            <small class="text-muted" style="font-size: 11px;">Jam Pelajaran</small>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="card border-0 shadow-sm rounded-4 p-3 bg-white text-center h-100 border-start border-4 border-info">
+            <div class="text-muted small fw-medium mb-1"><i class="bi bi-heart-pulse-fill text-info me-1"></i> Total Sakit</div>
+            <div class="fs-4 fw-bold text-info" id="rekap-stat-total-sakit">0</div>
+            <small class="text-muted" style="font-size: 11px;">Jam Pelajaran</small>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="card border-0 shadow-sm rounded-4 p-3 bg-white text-center h-100 border-start border-4 border-danger">
+            <div class="text-muted small fw-medium mb-1"><i class="bi bi-exclamation-octagon-fill text-danger me-1"></i> Total Alfa</div>
+            <div class="fs-4 fw-bold text-danger" id="rekap-stat-total-alfa">0</div>
+            <small class="text-muted" style="font-size: 11px;">Tanpa Keterangan</small>
+          </div>
+        </div>
+      </div>
+
+      <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="card-header bg-white border-bottom py-3 d-flex flex-column gap-3">
+          <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
+            <div>
+              <h5 class="mb-0 fw-bold text-dark"><i class="bi bi-person-x-fill text-danger me-2"></i>Rekapitulasi Ketidakhadiran Santri</h5>
+              <small class="text-muted">Peringkat santri dengan ketidakhadiran tertinggi (Izin, Sakit, Alfa) beserta rincian lengkap.</small>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              <button id="btn-refresh-rekap" class="btn btn-sm btn-primary rounded-pill px-3 shadow-sm d-flex align-items-center gap-1" title="Muat Ulang Rekap">
+                <i class="bi bi-arrow-clockwise"></i> <span>Perbarui</span>
+              </button>
+              <button id="btn-print-rekap" class="btn btn-sm btn-outline-secondary rounded-pill px-3 shadow-sm d-flex align-items-center gap-1" title="Cetak Rekap Ketidakhadiran">
+                <i class="bi bi-printer"></i> <span>Cetak</span>
+              </button>
+            </div>
+          </div>
+          
+          <!-- Filter Controls Rekap -->
+          <div class="p-3 bg-light rounded-3 border d-flex flex-column flex-lg-row align-items-stretch align-items-lg-center justify-content-between gap-3 flex-wrap">
+            <div class="d-flex flex-wrap align-items-center gap-2">
+              <!-- Filter Periode Rekap -->
+              <div class="d-flex align-items-center gap-1">
+                <span class="small text-muted fw-bold"><i class="bi bi-calendar3 me-1 text-primary"></i>Periode:</span>
+                <select id="filter-periode-rekap" class="form-select form-select-sm bg-white shadow-sm w-auto border-1 fw-semibold">
+                  <option value="this_month" selected>Bulan Ini</option>
+                  <option value="today">Hari Ini</option>
+                  <option value="this_week">Pekan Ini</option>
+                  <option value="last_week">Pekan Lalu</option>
+                  <option value="last_month">Bulan Lalu</option>
+                  <option value="custom">Rentang Tanggal...</option>
+                </select>
+              </div>
+
+              <div id="wrapper-single-date-rekap" class="d-flex align-items-center gap-1 d-none">
+                <input type="date" id="filter-tanggal-rekap" class="form-control form-control-sm bg-white shadow-sm border-1" style="width: 135px;" title="Pilih Tanggal Spesifik">
+              </div>
+
+              <div id="wrapper-range-tanggal-rekap" class="d-flex align-items-center gap-1 d-none">
+                <input type="date" id="filter-start-date-rekap" class="form-control form-control-sm bg-white shadow-sm border-1" style="width: 130px;" placeholder="Mulai">
+                <span class="small text-muted">-</span>
+                <input type="date" id="filter-end-date-rekap" class="form-control form-control-sm bg-white shadow-sm border-1" style="width: 130px;" placeholder="Sampai">
+                <button id="btn-apply-range-rekap" class="btn btn-sm btn-primary rounded px-2 py-1 shadow-sm" title="Terapkan Rentang"><i class="bi bi-check2"></i></button>
+              </div>
+
+              <!-- Filter Kelas Rekap -->
+              <div class="d-flex align-items-center gap-1">
+                <span class="small text-muted fw-bold"><i class="bi bi-building me-1 text-primary"></i>Kelas:</span>
+                <select id="filter-kelas-rekap" class="form-select form-select-sm bg-white shadow-sm w-auto border-1">
+                  <option value="Semua">Semua Kelas</option>
+                </select>
+              </div>
+
+              <!-- Filter Urutan Ranking Rekap -->
+              <div class="d-flex align-items-center gap-1">
+                <span class="small text-muted fw-bold"><i class="bi bi-sort-down me-1 text-primary"></i>Urutkan:</span>
+                <select id="filter-sort-rekap" class="form-select form-select-sm bg-white shadow-sm w-auto border-1 fw-semibold text-primary">
+                  <option value="total" selected>Total Terbanyak</option>
+                  <option value="alfa">Alfa Terbanyak</option>
+                  <option value="sakit">Sakit Terbanyak</option>
+                  <option value="izin">Izin Terbanyak</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Ceklist Kategori Rekap & Search Input -->
+            <div class="d-flex flex-wrap align-items-center gap-3">
+              <div class="d-flex align-items-center gap-2 bg-white px-3 py-1 rounded-pill border shadow-sm">
+                <span class="small text-muted fw-bold me-1">Ceklist:</span>
+                <div class="form-check form-check-inline m-0">
+                  <input class="form-check-input filter-kategori-check" type="checkbox" id="check-kategori-izin" value="izin" checked>
+                  <label class="form-check-label small fw-semibold text-warning" for="check-kategori-izin">Izin</label>
+                </div>
+                <div class="form-check form-check-inline m-0">
+                  <input class="form-check-input filter-kategori-check" type="checkbox" id="check-kategori-sakit" value="sakit" checked>
+                  <label class="form-check-label small fw-semibold text-info" for="check-kategori-sakit">Sakit</label>
+                </div>
+                <div class="form-check form-check-inline m-0">
+                  <input class="form-check-input filter-kategori-check" type="checkbox" id="check-kategori-alfa" value="alfa" checked>
+                  <label class="form-check-label small fw-semibold text-danger" for="check-kategori-alfa">Alfa</label>
+                </div>
+              </div>
+
+              <div class="input-group input-group-sm" style="max-width: 200px;">
+                <span class="input-group-text bg-white border-1"><i class="bi bi-search text-muted"></i></span>
+                <input type="text" id="filter-search-rekap" class="form-control bg-white border-1" placeholder="Cari santri...">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabel Rekapitulasi Santri -->
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0" id="tabel-rekap-absen">
+            <thead class="table-light text-muted small">
+              <tr>
+                <th class="py-3 px-3 fw-medium border-bottom-0 text-center" style="width: 50px;">No</th>
+                <th class="py-3 px-3 fw-medium border-bottom-0 th-sortable-rekap" data-sort="nama" style="cursor: pointer;">
+                  Nama Santri <i class="bi bi-arrow-down-up ms-1 text-muted" style="font-size: 11px;"></i>
+                </th>
+                <th class="py-3 px-3 fw-medium border-bottom-0 text-center th-sortable-rekap" data-sort="kelas" style="cursor: pointer; width: 100px;">
+                  Kelas <i class="bi bi-arrow-down-up ms-1 text-muted" style="font-size: 11px;"></i>
+                </th>
+                <th class="py-3 px-3 fw-medium border-bottom-0 text-center th-sortable-rekap" data-sort="izin" style="cursor: pointer; width: 90px;">
+                  Izin <i class="bi bi-arrow-down-up ms-1 text-muted" style="font-size: 11px;"></i>
+                </th>
+                <th class="py-3 px-3 fw-medium border-bottom-0 text-center th-sortable-rekap" data-sort="sakit" style="cursor: pointer; width: 90px;">
+                  Sakit <i class="bi bi-arrow-down-up ms-1 text-muted" style="font-size: 11px;"></i>
+                </th>
+                <th class="py-3 px-3 fw-medium border-bottom-0 text-center th-sortable-rekap" data-sort="alfa" style="cursor: pointer; width: 90px;">
+                  Alfa <i class="bi bi-arrow-down-up ms-1 text-muted" style="font-size: 11px;"></i>
+                </th>
+                <th class="py-3 px-3 fw-medium border-bottom-0 text-center th-sortable-rekap text-primary" data-sort="total" style="cursor: pointer; width: 120px;">
+                  Total <i class="bi bi-arrow-down-up ms-1" style="font-size: 11px;"></i>
+                </th>
+                <th class="py-3 px-3 fw-medium border-bottom-0 text-center text-nowrap" style="width: 140px;">Rincian</th>
+              </tr>
+            </thead>
+            <tbody id="body-rekap-absen">
+              <tr>
+                <td colspan="8" class="text-center py-5 text-muted">
+                  <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div> Memuat data rekap ketidakhadiran...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Bagian 3: Daftar Catatan Permasalahan Sesuai Kelas -->
+    <section id="catatan-kasus-section" class="d-none mb-4 animate-fade-in">
+      <!-- Stat Cards Summary Permasalahan -->
+      <div class="row g-3 mb-3">
+        <div class="col-6 col-md-3">
+          <div class="card border-0 shadow-sm rounded-4 p-3 bg-white text-center h-100 border-start border-4 border-warning">
+            <div class="text-muted small fw-medium mb-1"><i class="bi bi-journal-text text-warning me-1"></i> Total Kejadian</div>
+            <div class="fs-4 fw-bold text-dark" id="kasus-stat-total">0</div>
+            <small class="text-muted" style="font-size: 11px;">Catatan Kejadian</small>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="card border-0 shadow-sm rounded-4 p-3 bg-white text-center h-100 border-start border-4 border-primary">
+            <div class="text-muted small fw-medium mb-1"><i class="bi bi-chat-left-quote-fill text-primary me-1"></i> Catatan KBM</div>
+            <div class="fs-4 fw-bold text-primary" id="kasus-stat-kelas">0</div>
+            <small class="text-muted" style="font-size: 11px;">Kendala / Keterangan Kelas</small>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="card border-0 shadow-sm rounded-4 p-3 bg-white text-center h-100 border-start border-4 border-danger">
+            <div class="text-muted small fw-medium mb-1"><i class="bi bi-person-exclamation text-danger me-1"></i> Kasus Santri</div>
+            <div class="fs-4 fw-bold text-danger" id="kasus-stat-santri">0</div>
+            <small class="text-muted" style="font-size: 11px;">Catatan Adab / Santri Khusus</small>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="card border-0 shadow-sm rounded-4 p-3 bg-white text-center h-100 border-start border-4 border-secondary">
+            <div class="text-muted small fw-medium mb-1"><i class="bi bi-building text-secondary me-1"></i> Kelas Terpantau</div>
+            <div class="fs-4 fw-bold text-secondary" id="kasus-stat-kelas-count">0</div>
+            <small class="text-muted" style="font-size: 11px;">Kelas Memiliki Catatan</small>
+          </div>
+        </div>
+      </div>
+
+      <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="card-header bg-white border-bottom py-3 d-flex flex-column gap-3">
+          <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
+            <div>
+              <h5 class="mb-0 fw-bold text-dark"><i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>Daftar Catatan Permasalahan & Kejadian KBM</h5>
+              <small class="text-muted">Pelacakan catatan kejadian kelas, kendala pembelajaran, dan catatan adab santri per kelas.</small>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              <!-- Switch View: Feed Timeline vs Tabel -->
+              <div class="btn-group btn-group-sm shadow-sm rounded-pill p-1 bg-light border" role="group">
+                <button type="button" class="btn btn-sm btn-primary rounded-pill px-3 py-1 fw-medium" id="btn-view-feed" onclick="switchKasusView('feed')">
+                  <i class="bi bi-view-stacked me-1"></i> Feed Kartu
+                </button>
+                <button type="button" class="btn btn-sm btn-light rounded-pill px-3 py-1 fw-medium" id="btn-view-table" onclick="switchKasusView('table')">
+                  <i class="bi bi-table me-1"></i> Tabel
+                </button>
+              </div>
+              <button id="btn-refresh-kasus" class="btn btn-sm btn-primary rounded-pill px-3 shadow-sm d-flex align-items-center gap-1" title="Muat Ulang Catatan">
+                <i class="bi bi-arrow-clockwise"></i> <span>Perbarui</span>
+              </button>
+              <button id="btn-print-kasus" class="btn btn-sm btn-outline-secondary rounded-pill px-3 shadow-sm d-flex align-items-center gap-1" title="Cetak Laporan Permasalahan">
+                <i class="bi bi-printer"></i> <span>Cetak</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Quick Pill Filter Kelas -->
+          <div class="d-flex align-items-center gap-2 flex-wrap" id="kasus-quick-kelas-pills">
+            <span class="small text-muted fw-bold me-1"><i class="bi bi-funnel me-1 text-primary"></i>Pilih Kelas:</span>
+            <button class="btn btn-sm btn-primary rounded-pill px-3 py-0 btn-filter-kelas-pill active" data-kelas="Semua">Semua Kelas</button>
+            <!-- Diisi otomatis daftar kelas -->
+          </div>
+          
+          <!-- Filter Controls Permasalahan -->
+          <div class="p-3 bg-light rounded-3 border d-flex flex-column flex-lg-row align-items-stretch align-items-lg-center justify-content-between gap-3 flex-wrap">
+            <div class="d-flex flex-wrap align-items-center gap-2">
+              
+              <!-- Pelacakan Mode Waktu: Per Bulan / Per Pekan / Rentang Tanggal -->
+              <div class="d-flex align-items-center gap-1">
+                <span class="small text-muted fw-bold"><i class="bi bi-clock-history me-1 text-primary"></i>Lacak:</span>
+                <select id="filter-mode-waktu-kasus" class="form-select form-select-sm bg-white shadow-sm w-auto border-1 fw-semibold">
+                  <option value="bulan" selected>Per Bulan</option>
+                  <option value="pekan">Per Pekan</option>
+                  <option value="rentang">Rentang Tanggal</option>
+                </select>
+              </div>
+
+              <!-- Sub Filter Per Bulan -->
+              <div id="wrapper-kasus-bulan" class="d-flex align-items-center gap-1">
+                <select id="filter-pilihan-bulan-kasus" class="form-select form-select-sm bg-white shadow-sm w-auto border-1">
+                  <option value="this_month" selected>Bulan Ini</option>
+                  <option value="last_month">Bulan Lalu</option>
+                  <option value="specific_month">Pilih Bulan & Tahun...</option>
+                </select>
+                <div id="wrapper-specific-month" class="d-flex align-items-center gap-1 d-none">
+                  <select id="filter-kasus-month-select" class="form-select form-select-sm bg-white shadow-sm w-auto border-1">
+                    <option value="1">Januari</option>
+                    <option value="2">Februari</option>
+                    <option value="3">Maret</option>
+                    <option value="4">April</option>
+                    <option value="5">Mei</option>
+                    <option value="6">Juni</option>
+                    <option value="7">Juli</option>
+                    <option value="8">Agustus</option>
+                    <option value="9">September</option>
+                    <option value="10">Oktober</option>
+                    <option value="11">November</option>
+                    <option value="12">Desember</option>
+                  </select>
+                  <select id="filter-kasus-year-select" class="form-select form-select-sm bg-white shadow-sm w-auto border-1">
+                    <option value="2026" selected>2026</option>
+                    <option value="2027">2027</option>
+                    <option value="2025">2025</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Sub Filter Per Pekan -->
+              <div id="wrapper-kasus-pekan" class="d-flex align-items-center gap-1 d-none">
+                <select id="filter-pilihan-pekan-kasus" class="form-select form-select-sm bg-white shadow-sm w-auto border-1">
+                  <option value="this_week" selected>Pekan Ini</option>
+                  <option value="last_week">Pekan Lalu</option>
+                </select>
+              </div>
+
+              <!-- Sub Filter Rentang Tanggal -->
+              <div id="wrapper-kasus-rentang" class="d-flex align-items-center gap-1 d-none">
+                <input type="date" id="filter-start-date-kasus" class="form-control form-control-sm bg-white shadow-sm border-1" style="width: 130px;" placeholder="Mulai">
+                <span class="small text-muted">-</span>
+                <input type="date" id="filter-end-date-kasus" class="form-control form-control-sm bg-white shadow-sm border-1" style="width: 130px;" placeholder="Sampai">
+                <button id="btn-apply-range-kasus" class="btn btn-sm btn-primary rounded px-2 py-1 shadow-sm" title="Terapkan Rentang"><i class="bi bi-check2"></i></button>
+              </div>
+
+              <!-- Filter Tipe Permasalahan -->
+              <div class="d-flex align-items-center gap-1">
+                <span class="small text-muted fw-bold"><i class="bi bi-tags me-1 text-primary"></i>Kategori:</span>
+                <select id="filter-tipe-kasus" class="form-select form-select-sm bg-white shadow-sm w-auto border-1">
+                  <option value="Semua">Semua Catatan</option>
+                  <option value="kelas">Catatan Kejadian Kelas/KBM</option>
+                  <option value="santri">Catatan Adab/Santri Khusus</option>
+                  <option value="alfa">Santri Alfa / Mangkir</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="d-flex align-items-center gap-2">
+              <div class="input-group input-group-sm" style="max-width: 220px;">
+                <span class="input-group-text bg-white border-1"><i class="bi bi-search text-muted"></i></span>
+                <input type="text" id="filter-search-kasus" class="form-control bg-white border-1" placeholder="Cari masalah/guru/materi...">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Konten Feed Kartu Kejadian -->
+        <div id="container-kasus-feed" class="p-3 bg-light-subtle">
+          <div id="feed-kasus-list" class="d-flex flex-column gap-3">
+            <div class="text-center py-5 text-muted">
+              <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div> Memuat catatan permasalahan...
+            </div>
+          </div>
+        </div>
+
+        <!-- Konten Tabel Kejadian (Alternatif) -->
+        <div id="container-kasus-table" class="table-responsive d-none">
+          <table class="table table-hover align-middle mb-0" id="tabel-kasus">
+            <thead class="table-light text-muted small">
+              <tr>
+                <th class="py-3 px-3 fw-medium border-bottom-0 text-center" style="width: 50px;">No</th>
+                <th class="py-3 px-3 fw-medium border-bottom-0" style="width: 140px;">Tanggal & Jam</th>
+                <th class="py-3 px-3 fw-medium border-bottom-0 text-center" style="width: 80px;">Kelas</th>
+                <th class="py-3 px-3 fw-medium border-bottom-0" style="width: 180px;">Guru & Pelajaran</th>
+                <th class="py-3 px-3 fw-medium border-bottom-0" style="width: 130px;">Tipe Catatan</th>
+                <th class="py-3 px-3 fw-medium border-bottom-0">Deskripsi Kejadian / Catatan Guru</th>
+                <th class="py-3 px-3 fw-medium border-bottom-0" style="width: 220px;">Santri Terlibat / Alfa</th>
+              </tr>
+            </thead>
+            <tbody id="body-kasus-table">
+              <tr>
+                <td colspan="7" class="text-center py-5 text-muted">
+                  Memuat catatan permasalahan...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
       </div>
     </section>
 
@@ -675,6 +1028,35 @@
           <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body pb-4" id="modal-detail-santri-body">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Rincian Ketidakhadiran Santri Spesifik (Rekap) -->
+  <div class="modal fade" id="modal-detail-rekap-santri" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+      <div class="modal-content border-0 rounded-4 shadow-lg overflow-hidden">
+        <div class="modal-header bg-danger text-white border-0 py-3 px-4">
+          <div class="d-flex align-items-center gap-2">
+            <div class="bg-white text-danger rounded-3 p-1 d-flex align-items-center justify-content-center" style="width: 34px; height: 34px;">
+              <i class="bi bi-person-x fs-5"></i>
+            </div>
+            <div>
+              <h5 class="modal-title fw-bold" id="modal-rekap-santri-nama">Rincian Ketidakhadiran Santri</h5>
+              <p class="mb-0 small text-white text-opacity-75" id="modal-rekap-santri-sub">Detail riwayat tanggal, mapel, dan catatan</p>
+            </div>
+          </div>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4" id="modal-rekap-santri-body">
+          <!-- Diisi secara dinamis oleh JavaScript -->
+        </div>
+        <div class="modal-footer border-0 bg-light py-2 px-4 justify-content-between">
+          <button type="button" class="btn btn-secondary btn-sm px-3 rounded-pill" data-bs-dismiss="modal">Tutup</button>
+          <button type="button" class="btn btn-outline-danger btn-sm px-3 rounded-pill fw-medium" id="btn-print-santri-detail">
+            <i class="bi bi-printer me-1"></i> Cetak Rincian
+          </button>
         </div>
       </div>
     </div>

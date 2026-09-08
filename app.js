@@ -401,19 +401,78 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnPrintLog = document.getElementById('btn-print-log');
   const tbodyLog = document.getElementById('body-log');
 
+  // --- Navigasi Tab Baru ---
+  const navRekapAbsen = document.getElementById('nav-rekap-absen');
+  const navCatatanKasus = document.getElementById('nav-catatan-kasus');
+  const rekapAbsenSection = document.getElementById('rekap-absen-section');
+  const catatanKasusSection = document.getElementById('catatan-kasus-section');
+
+  // --- Filter & Kontrol Tab Rekap Ketidakhadiran ---
+  const filterPeriodeRekap = document.getElementById('filter-periode-rekap');
+  const wrapperSingleDateRekap = document.getElementById('wrapper-single-date-rekap');
+  const wrapperRangeTanggalRekap = document.getElementById('wrapper-range-tanggal-rekap');
+  const filterTanggalRekap = document.getElementById('filter-tanggal-rekap');
+  const filterStartDateRekap = document.getElementById('filter-start-date-rekap');
+  const filterEndDateRekap = document.getElementById('filter-end-date-rekap');
+  const btnApplyRangeRekap = document.getElementById('btn-apply-range-rekap');
+  const filterKelasRekap = document.getElementById('filter-kelas-rekap');
+  const filterSortRekap = document.getElementById('filter-sort-rekap');
+  const checkKategoriIzin = document.getElementById('check-kategori-izin');
+  const checkKategoriSakit = document.getElementById('check-kategori-sakit');
+  const checkKategoriAlfa = document.getElementById('check-kategori-alfa');
+  const filterSearchRekap = document.getElementById('filter-search-rekap');
+  const btnRefreshRekap = document.getElementById('btn-refresh-rekap');
+  const btnPrintRekap = document.getElementById('btn-print-rekap');
+  const tbodyRekapAbsen = document.getElementById('body-rekap-absen');
+
+  // --- Filter & Kontrol Tab Catatan Permasalahan ---
+  const filterModeWaktuKasus = document.getElementById('filter-mode-waktu-kasus');
+  const wrapperKasusBulan = document.getElementById('wrapper-kasus-bulan');
+  const wrapperKasusPekan = document.getElementById('wrapper-kasus-pekan');
+  const wrapperKasusRentang = document.getElementById('wrapper-kasus-rentang');
+  const filterPilihanBulanKasus = document.getElementById('filter-pilihan-bulan-kasus');
+  const wrapperSpecificMonth = document.getElementById('wrapper-specific-month');
+  const filterKasusMonthSelect = document.getElementById('filter-kasus-month-select');
+  const filterKasusYearSelect = document.getElementById('filter-kasus-year-select');
+  const filterPilihanPekanKasus = document.getElementById('filter-pilihan-pekan-kasus');
+  const filterStartDateKasus = document.getElementById('filter-start-date-kasus');
+  const filterEndDateKasus = document.getElementById('filter-end-date-kasus');
+  const btnApplyRangeKasus = document.getElementById('btn-apply-range-kasus');
+  const kasusQuickKelasPills = document.getElementById('kasus-quick-kelas-pills');
+  const filterTipeKasus = document.getElementById('filter-tipe-kasus');
+  const filterSearchKasus = document.getElementById('filter-search-kasus');
+  const btnRefreshKasus = document.getElementById('btn-refresh-kasus');
+  const btnPrintKasus = document.getElementById('btn-print-kasus');
+  const btnViewFeed = document.getElementById('btn-view-feed');
+  const btnViewTable = document.getElementById('btn-view-table');
+  const containerKasusFeed = document.getElementById('container-kasus-feed');
+  const containerKasusTable = document.getElementById('container-kasus-table');
+  const feedKasusList = document.getElementById('feed-kasus-list');
+  const tbodyKasusTable = document.getElementById('body-kasus-table');
+
   let currentRawLogData = [];
+  let currentRekapProcessedData = [];
+  let currentSortRekap = { col: 'total', dir: 'desc' };
+  window.rekapSantriRecordsCache = {};
+
+  let currentKasusProcessedData = [];
+  let currentSelectedKelasKasus = 'Semua';
+  let currentKasusViewMode = 'feed';
 
   // Set default date to today on load
   const todayDateStr = new Date().toISOString().split('T')[0];
-  if (filterTanggalLog) {
-    filterTanggalLog.value = todayDateStr;
-  }
-  if (filterStartDateLog) {
-    filterStartDateLog.value = todayDateStr;
-  }
-  if (filterEndDateLog) {
-    filterEndDateLog.value = todayDateStr;
-  }
+  if (filterTanggalLog) filterTanggalLog.value = todayDateStr;
+  if (filterStartDateLog) filterStartDateLog.value = todayDateStr;
+  if (filterEndDateLog) filterEndDateLog.value = todayDateStr;
+
+  if (filterTanggalRekap) filterTanggalRekap.value = todayDateStr;
+  if (filterStartDateRekap) filterStartDateRekap.value = todayDateStr;
+  if (filterEndDateRekap) filterEndDateRekap.value = todayDateStr;
+
+  if (filterStartDateKasus) filterStartDateKasus.value = todayDateStr;
+  if (filterEndDateKasus) filterEndDateKasus.value = todayDateStr;
+  if (filterKasusMonthSelect) filterKasusMonthSelect.value = String(new Date().getMonth() + 1);
+  if (filterKasusYearSelect) filterKasusYearSelect.value = String(new Date().getFullYear());
 
   function formatDateIndo(dateStr) {
     if (!dateStr) return '-';
@@ -476,25 +535,62 @@ document.addEventListener('DOMContentLoaded', () => {
     return { startDate: fmt(now), endDate: fmt(now), label: formatDateIndo(fmt(now)) };
   }
 
-  if (navJadwal && navLog) {
+  function hideAllMainSections() {
+    if (dashboardSection) dashboardSection.classList.add('d-none');
+    if (logSection) logSection.classList.add('d-none');
+    if (rekapAbsenSection) rekapAbsenSection.classList.add('d-none');
+    if (catatanKasusSection) catatanKasusSection.classList.add('d-none');
+    if (configSection) configSection.classList.add('d-none');
+  }
+
+  if (navJadwal) {
     navJadwal.addEventListener('change', () => {
-      if(navJadwal.checked) {
+      if (navJadwal.checked) {
+        hideAllMainSections();
         dashboardSection.classList.remove('d-none');
-        logSection.classList.add('d-none');
-        configSection.classList.add('d-none');
       }
     });
+  }
+
+  if (navLog) {
     navLog.addEventListener('change', () => {
-      if(navLog.checked) {
-        dashboardSection.classList.add('d-none');
+      if (navLog.checked) {
+        hideAllMainSections();
         logSection.classList.remove('d-none');
-        configSection.classList.add('d-none');
-        // Fetch log for current range
-        if(!filterTanggalLog.value) {
-           filterTanggalLog.value = todayDateStr;
+        if (!filterTanggalLog.value) {
+          filterTanggalLog.value = todayDateStr;
         }
         fetchLogKbm();
       }
+    });
+  }
+
+  if (navRekapAbsen) {
+    navRekapAbsen.addEventListener('change', () => {
+      if (navRekapAbsen.checked) {
+        hideAllMainSections();
+        rekapAbsenSection.classList.remove('d-none');
+        fetchRekapAbsen();
+      }
+    });
+  }
+
+  if (navCatatanKasus) {
+    navCatatanKasus.addEventListener('change', () => {
+      if (navCatatanKasus.checked) {
+        hideAllMainSections();
+        catatanKasusSection.classList.remove('d-none');
+        fetchCatatanKasus();
+      }
+    });
+  }
+
+  const btnKembaliJadwal = document.getElementById('btn-kembali-jadwal');
+  if (btnKembaliJadwal) {
+    btnKembaliJadwal.addEventListener('click', () => {
+      hideAllMainSections();
+      dashboardSection.classList.remove('d-none');
+      if (navJadwal) navJadwal.checked = true;
     });
   }
 
@@ -1071,6 +1167,10 @@ document.addEventListener('DOMContentLoaded', () => {
       // Show whatever was active
       if(navLog && navLog.checked) {
          logSection.classList.remove('d-none');
+      } else if(navRekapAbsen && navRekapAbsen.checked) {
+         rekapAbsenSection.classList.remove('d-none');
+      } else if(navCatatanKasus && navCatatanKasus.checked) {
+         catatanKasusSection.classList.remove('d-none');
       } else {
          dashboardSection.classList.remove('d-none');
       }
@@ -1093,6 +1193,973 @@ document.addEventListener('DOMContentLoaded', () => {
       if (btnKeluar) btnKeluar.classList.add('d-none');
     });
   }
+
+  // =========================================================================
+  // MODUL TAB: REKAP KETIDAKHADIRAN SANTRI
+  // =========================================================================
+
+  function getRekapDateRange() {
+    const periode = filterPeriodeRekap ? filterPeriodeRekap.value : 'this_month';
+    const now = new Date();
+    const fmt = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+    if (periode === 'today') {
+      const tgl = filterTanggalRekap && filterTanggalRekap.value ? filterTanggalRekap.value : fmt(now);
+      return { startDate: tgl, endDate: tgl, label: 'Hari Ini (' + formatDateIndo(tgl) + ')' };
+    }
+    if (periode === 'this_week') {
+      const day = now.getDay();
+      const diffToMonday = (day === 0 ? 6 : day - 1);
+      const monday = new Date(now);
+      monday.setDate(now.getDate() - diffToMonday);
+      const sunday = new Date(monday);
+      sunday.setDate(monday.getDate() + 6);
+      return { startDate: fmt(monday), endDate: fmt(sunday), label: `Pekan Ini (${formatDateIndo(fmt(monday))} - ${formatDateIndo(fmt(sunday))})` };
+    }
+    if (periode === 'last_week') {
+      const day = now.getDay();
+      const diffToLastMonday = (day === 0 ? 6 : day - 1) + 7;
+      const lastMonday = new Date(now);
+      lastMonday.setDate(now.getDate() - diffToLastMonday);
+      const lastSunday = new Date(lastMonday);
+      lastSunday.setDate(lastMonday.getDate() + 6);
+      return { startDate: fmt(lastMonday), endDate: fmt(lastSunday), label: `Pekan Lalu (${formatDateIndo(fmt(lastMonday))} - ${formatDateIndo(fmt(lastSunday))})` };
+    }
+    if (periode === 'this_month') {
+      const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+      const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      return { startDate: fmt(firstDay), endDate: fmt(lastDay), label: `Bulan Ini (${formatDateIndo(fmt(firstDay))} - ${formatDateIndo(fmt(lastDay))})` };
+    }
+    if (periode === 'last_month') {
+      const firstDay = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const lastDay = new Date(now.getFullYear(), now.getMonth(), 0);
+      return { startDate: fmt(firstDay), endDate: fmt(lastDay), label: `Bulan Lalu (${formatDateIndo(fmt(firstDay))} - ${formatDateIndo(fmt(lastDay))})` };
+    }
+    if (periode === 'custom') {
+      const start = filterStartDateRekap && filterStartDateRekap.value ? filterStartDateRekap.value : fmt(now);
+      const end = filterEndDateRekap && filterEndDateRekap.value ? filterEndDateRekap.value : fmt(now);
+      return { startDate: start, endDate: end, label: `${formatDateIndo(start)} s/d ${formatDateIndo(end)}` };
+    }
+    return { startDate: fmt(now), endDate: fmt(now), label: formatDateIndo(fmt(now)) };
+  }
+
+  async function fetchRekapAbsen(forceRefresh = false) {
+    const range = getRekapDateRange();
+    if (!tbodyRekapAbsen) return;
+
+    tbodyRekapAbsen.innerHTML = `<tr><td colspan="8" class="text-center py-5 text-muted"><div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div> Memuat data rekap ketidakhadiran (${range.label})...</td></tr>`;
+    showLoading(true);
+
+    try {
+      const payload = { 
+        action: 'get_log_kbm', 
+        startDate: range.startDate, 
+        endDate: range.endDate,
+        tanggal: range.startDate 
+      };
+
+      const response = await fetch("https://script.google.com/macros/s/AKfycbxWjwlc6-mXpOimodZMFvQIC8hwdGRAz78PqnYIfQgSuXKkI9fUP4hXfC5x3QUIypiT/exec?action=get_log_kbm", {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload)
+      });
+      const res = await response.json();
+
+      if (res.success) {
+        currentRawLogData = res.data || [];
+        populateKelasFilterLog(currentRawLogData);
+        populateKelasFilterRekap(currentRawLogData);
+        populateKelasFilterKasus(currentRawLogData);
+        processAndRenderRekapAbsen();
+      } else {
+        Swal.fire('Error', res.message || 'Gagal memuat data rekap.', 'error');
+        tbodyRekapAbsen.innerHTML = `<tr><td colspan="8" class="text-center py-5 text-danger">Gagal memuat rekap ketidakhadiran.</td></tr>`;
+      }
+    } catch(e) {
+      console.error(e);
+      Swal.fire('Error', 'Terjadi kesalahan jaringan saat memuat rekap.', 'error');
+      tbodyRekapAbsen.innerHTML = `<tr><td colspan="8" class="text-center py-5 text-danger">Terjadi kesalahan jaringan.</td></tr>`;
+    } finally {
+      showLoading(false);
+    }
+  }
+
+  function populateKelasFilterRekap(data) {
+    if (!filterKelasRekap) return;
+    const currentVal = filterKelasRekap.value;
+    const classes = [...new Set(data.map(d => d.kelas).filter(Boolean))].sort();
+    filterKelasRekap.innerHTML = '<option value="Semua">Semua Kelas</option>';
+    classes.forEach(c => {
+      filterKelasRekap.innerHTML += `<option value="${c}">${c}</option>`;
+    });
+    if (classes.includes(currentVal)) {
+      filterKelasRekap.value = currentVal;
+    }
+  }
+
+  function processAndRenderRekapAbsen() {
+    const rawLogs = currentRawLogData || [];
+    const santriMap = new Map();
+
+    rawLogs.forEach(logItem => {
+      if (!logItem.status_isi) return;
+      const santriList = logItem.catatan_santri || (window.santriDetailsCache && window.santriDetailsCache[logItem.id_jurnal]) || [];
+
+      santriList.forEach(s => {
+        const st = String(s.status || '').toLowerCase().trim();
+        const isIzin = st.includes('izin');
+        const isSakit = st.includes('sakit');
+        const isAlfa = st.includes('alfa');
+
+        if (!isIzin && !isSakit && !isAlfa) return;
+
+        const sId = String(s.nis || s.id_santri || s.nama || '').trim();
+        if (!sId) return;
+
+        if (!santriMap.has(sId)) {
+          santriMap.set(sId, {
+            id: sId,
+            nis: s.nis || s.id_santri || '-',
+            nama: s.nama || s.nis || 'Santri Tanpa Nama',
+            kelas: logItem.kelas || '-',
+            izin: 0,
+            sakit: 0,
+            alfa: 0,
+            records: []
+          });
+        }
+
+        const entry = santriMap.get(sId);
+        if (isIzin) entry.izin++;
+        else if (isSakit) entry.sakit++;
+        else if (isAlfa) entry.alfa++;
+
+        entry.records.push({
+          tanggal: logItem.tanggal,
+          hari: logItem.hari,
+          waktu: logItem.waktu,
+          jam_ke: logItem.jam_ke,
+          kelas: logItem.kelas,
+          pelajaran: logItem.pelajaran,
+          guru: logItem.guru,
+          status: isIzin ? 'Izin' : (isSakit ? 'Sakit' : 'Alfa'),
+          catatan: (s.catatan || logItem.catatan_kelas || '').trim() || '-'
+        });
+      });
+    });
+
+    currentRekapProcessedData = Array.from(santriMap.values());
+
+    // Cache records per santri
+    window.rekapSantriRecordsCache = {};
+    currentRekapProcessedData.forEach(item => {
+      window.rekapSantriRecordsCache[item.id] = item;
+    });
+
+    applyRekapFilters();
+  }
+
+  function applyRekapFilters() {
+    if (!tbodyRekapAbsen) return;
+    const kelasVal = filterKelasRekap ? filterKelasRekap.value : 'Semua';
+    const searchVal = filterSearchRekap ? filterSearchRekap.value.toLowerCase().trim() : '';
+    const sortVal = filterSortRekap ? filterSortRekap.value : 'total';
+
+    const incIzin = checkKategoriIzin ? checkKategoriIzin.checked : true;
+    const incSakit = checkKategoriSakit ? checkKategoriSakit.checked : true;
+    const incAlfa = checkKategoriAlfa ? checkKategoriAlfa.checked : true;
+
+    // Hitung activeTotal berdasarkan ceklist kategori terpilih
+    let filtered = currentRekapProcessedData.map(item => {
+      const activeTotal = (incIzin ? item.izin : 0) + (incSakit ? item.sakit : 0) + (incAlfa ? item.alfa : 0);
+      return {
+        ...item,
+        activeTotal: activeTotal
+      };
+    }).filter(item => item.activeTotal > 0);
+
+    // Filter Kelas
+    if (kelasVal !== 'Semua') {
+      filtered = filtered.filter(item => String(item.kelas).toLowerCase().trim() === String(kelasVal).toLowerCase().trim());
+    }
+
+    // Filter Search
+    if (searchVal) {
+      filtered = filtered.filter(item => 
+        item.nama.toLowerCase().includes(searchVal) ||
+        item.nis.toLowerCase().includes(searchVal) ||
+        item.kelas.toLowerCase().includes(searchVal)
+      );
+    }
+
+    // Sorting (Urutan Tertinggi)
+    filtered.sort((a, b) => {
+      if (currentSortRekap.col === 'nama') {
+        return currentSortRekap.dir === 'asc' ? a.nama.localeCompare(b.nama) : b.nama.localeCompare(a.nama);
+      } else if (currentSortRekap.col === 'kelas') {
+        return currentSortRekap.dir === 'asc' ? a.kelas.localeCompare(b.kelas) : b.kelas.localeCompare(a.kelas);
+      } else if (currentSortRekap.col === 'izin') {
+        return currentSortRekap.dir === 'asc' ? a.izin - b.izin : b.izin - a.izin;
+      } else if (currentSortRekap.col === 'sakit') {
+        return currentSortRekap.dir === 'asc' ? a.sakit - b.sakit : b.sakit - a.sakit;
+      } else if (currentSortRekap.col === 'alfa') {
+        return currentSortRekap.dir === 'asc' ? a.alfa - b.alfa : b.alfa - a.alfa;
+      } else {
+        // Berdasarkan dropdown "Urutkan"
+        if (sortVal === 'alfa') {
+          return (b.alfa - a.alfa) || (b.activeTotal - a.activeTotal);
+        } else if (sortVal === 'sakit') {
+          return (b.sakit - a.sakit) || (b.activeTotal - a.activeTotal);
+        } else if (sortVal === 'izin') {
+          return (b.izin - a.izin) || (b.activeTotal - a.activeTotal);
+        } else {
+          return currentSortRekap.dir === 'asc' ? a.activeTotal - b.activeTotal : b.activeTotal - a.activeTotal;
+        }
+      }
+    });
+
+    updateRekapStats(filtered, currentRekapProcessedData);
+    renderRekapTable(filtered);
+  }
+
+  function updateRekapStats(filtered, allRekap) {
+    const elSantri = document.getElementById('rekap-stat-santri-count');
+    const elIzin = document.getElementById('rekap-stat-total-izin');
+    const elSakit = document.getElementById('rekap-stat-total-sakit');
+    const elAlfa = document.getElementById('rekap-stat-total-alfa');
+
+    let totalIzin = 0;
+    let totalSakit = 0;
+    let totalAlfa = 0;
+
+    filtered.forEach(item => {
+      totalIzin += item.izin;
+      totalSakit += item.sakit;
+      totalAlfa += item.alfa;
+    });
+
+    if (elSantri) elSantri.innerText = filtered.length;
+    if (elIzin) elIzin.innerText = totalIzin;
+    if (elSakit) elSakit.innerText = totalSakit;
+    if (elAlfa) elAlfa.innerText = totalAlfa;
+  }
+
+  function renderRekapTable(data) {
+    if (!tbodyRekapAbsen) return;
+    if (!data || data.length === 0) {
+      tbodyRekapAbsen.innerHTML = `<tr><td colspan="8" class="text-center py-5 text-muted"><div class="text-center mb-3"><i class="bi bi-person-check display-4 text-success opacity-50"></i></div>Tidak ada data ketidakhadiran untuk filter ini. Seluruh santri hadir atau filter belum sesuai.</td></tr>`;
+      return;
+    }
+
+    tbodyRekapAbsen.innerHTML = '';
+    data.forEach((item, index) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="text-center text-muted fw-semibold">${index + 1}</td>
+        <td>
+          <div class="fw-bold text-dark">${item.nama}</div>
+          <small class="text-muted font-monospace" style="font-size: 11px;">NIS: ${item.nis}</small>
+        </td>
+        <td class="text-center">
+          <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2 py-1">${item.kelas}</span>
+        </td>
+        <td class="text-center">
+          ${item.izin > 0 ? `<span class="badge bg-warning text-dark rounded-pill px-2 py-1 fw-bold">${item.izin}</span>` : '<span class="text-muted small">-</span>'}
+        </td>
+        <td class="text-center">
+          ${item.sakit > 0 ? `<span class="badge bg-info text-dark rounded-pill px-2 py-1 fw-bold">${item.sakit}</span>` : '<span class="text-muted small">-</span>'}
+        </td>
+        <td class="text-center">
+          ${item.alfa > 0 ? `<span class="badge bg-danger rounded-pill px-2 py-1 fw-bold">${item.alfa}</span>` : '<span class="text-muted small">-</span>'}
+        </td>
+        <td class="text-center">
+          <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-3 py-1 fs-6 fw-bold">${item.activeTotal}</span>
+        </td>
+        <td class="text-center text-nowrap">
+          <button class="btn btn-sm btn-outline-danger rounded-pill px-3 py-1 fw-semibold btn-detail-rekap" data-id="${item.id}" title="Lihat Rincian Ketidakhadiran">
+            <i class="bi bi-journal-text me-1"></i> Rincian
+          </button>
+        </td>
+      `;
+      tbodyRekapAbsen.appendChild(tr);
+    });
+
+    // Bind event klik tombol Rincian
+    document.querySelectorAll('.btn-detail-rekap').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const sId = e.currentTarget.getAttribute('data-id');
+        openModalDetailRekapSantri(sId);
+      });
+    });
+  }
+
+  window.openModalDetailRekapSantri = function(santriId, selectedFilter) {
+    const item = window.rekapSantriRecordsCache ? window.rekapSantriRecordsCache[santriId] : null;
+    if (!item) {
+      Swal.fire('Info', 'Data rincian santri tidak ditemukan.', 'info');
+      return;
+    }
+
+    const modalTitle = document.getElementById('modal-rekap-santri-nama');
+    const modalSub = document.getElementById('modal-rekap-santri-sub');
+    const modalBody = document.getElementById('modal-rekap-santri-body');
+    if (!modalBody) return;
+
+    if (modalTitle) modalTitle.innerText = item.nama;
+    if (modalSub) modalSub.innerText = `Kelas ${item.kelas} | NIS: ${item.nis}`;
+
+    let currentModalFilter = selectedFilter || 'Semua';
+
+    function renderModalContent() {
+      let filteredRecords = item.records || [];
+      if (currentModalFilter !== 'Semua') {
+        filteredRecords = filteredRecords.filter(r => r.status.toLowerCase() === currentModalFilter.toLowerCase());
+      }
+
+      const getStatusBadge = (st) => {
+        if (st === 'Izin') return '<span class="badge bg-warning text-dark">Izin</span>';
+        if (st === 'Sakit') return '<span class="badge bg-info text-dark">Sakit</span>';
+        if (st === 'Alfa') return '<span class="badge bg-danger">Alfa</span>';
+        return `<span class="badge bg-secondary">${st}</span>`;
+      };
+
+      let summaryHtml = `
+        <div class="p-3 bg-light rounded-3 mb-3 border">
+          <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+              <span class="badge bg-white text-dark border px-2 py-1">Total: <b>${item.records.length}</b></span>
+              <span class="badge bg-warning text-dark px-2 py-1">Izin: <b>${item.izin}</b></span>
+              <span class="badge bg-info text-dark px-2 py-1">Sakit: <b>${item.sakit}</b></span>
+              <span class="badge bg-danger text-white px-2 py-1">Alfa: <b>${item.alfa}</b></span>
+            </div>
+            <div class="btn-group btn-group-sm flex-wrap shadow-sm rounded-pill p-1 bg-white border" role="group">
+              <button type="button" class="btn btn-sm ${currentModalFilter === 'Semua' ? 'btn-primary' : 'btn-light'} rounded-pill px-2 py-0 fw-medium btn-modal-filter-rekap" data-filter="Semua">Semua (${item.records.length})</button>
+              <button type="button" class="btn btn-sm ${currentModalFilter === 'Izin' ? 'btn-warning text-dark' : 'btn-light'} rounded-pill px-2 py-0 fw-medium btn-modal-filter-rekap" data-filter="Izin">Izin (${item.izin})</button>
+              <button type="button" class="btn btn-sm ${currentModalFilter === 'Sakit' ? 'btn-info text-dark' : 'btn-light'} rounded-pill px-2 py-0 fw-medium btn-modal-filter-rekap" data-filter="Sakit">Sakit (${item.sakit})</button>
+              <button type="button" class="btn btn-sm ${currentModalFilter === 'Alfa' ? 'btn-danger' : 'btn-light'} rounded-pill px-2 py-0 fw-medium btn-modal-filter-rekap" data-filter="Alfa">Alfa (${item.alfa})</button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      let rowsHtml = '';
+      if (filteredRecords.length === 0) {
+        rowsHtml = `
+          <div class="text-center py-4 text-muted">
+            <i class="bi bi-clipboard-x display-6 text-secondary d-block mb-2"></i>
+            Tidak ada riwayat untuk kategori status <b>${currentModalFilter}</b>.
+          </div>
+        `;
+      } else {
+        const rows = filteredRecords.map((r, idx) => `
+          <tr>
+            <td class="text-muted text-center small" style="width: 40px;">${idx + 1}</td>
+            <td class="text-nowrap fw-semibold small">
+              ${r.hari || '-'}, ${formatDateIndo(r.tanggal)}
+              <div class="text-muted fw-normal" style="font-size: 11px;">Pukul ${r.waktu || '-'}</div>
+            </td>
+            <td>
+              <div class="fw-medium">${r.pelajaran}</div>
+              <small class="text-muted">Guru: ${r.guru}</small>
+            </td>
+            <td class="text-center" style="width: 90px;">${getStatusBadge(r.status)}</td>
+            <td class="text-muted small">${r.catatan || '-'}</td>
+          </tr>
+        `).join('');
+
+        rowsHtml = `
+          <div class="table-responsive" style="max-height: 380px;">
+            <table class="table table-sm table-hover align-middle mb-0">
+              <thead class="table-light text-muted small position-sticky top-0">
+                <tr>
+                  <th class="text-center" style="width: 40px;">No</th>
+                  <th>Tanggal & Waktu</th>
+                  <th>Pelajaran & Guru</th>
+                  <th class="text-center" style="width: 90px;">Status</th>
+                  <th>Catatan / Alasan</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rows}
+              </tbody>
+            </table>
+          </div>
+        `;
+      }
+
+      modalBody.innerHTML = summaryHtml + rowsHtml;
+
+      modalBody.querySelectorAll('.btn-modal-filter-rekap').forEach(b => {
+        b.addEventListener('click', (ev) => {
+          currentModalFilter = ev.currentTarget.getAttribute('data-filter');
+          renderModalContent();
+        });
+      });
+    }
+
+    renderModalContent();
+
+    const btnPrintDetail = document.getElementById('btn-print-santri-detail');
+    if (btnPrintDetail) {
+      btnPrintDetail.onclick = () => window.print();
+    }
+
+    const modalEl = document.getElementById('modal-detail-rekap-santri');
+    if (modalEl) {
+      const bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+      bsModal.show();
+    }
+  };
+
+  function printRekapTable() {
+    window.print();
+  }
+
+  // Bind Rekap Filters & Sort Headers
+  if (filterPeriodeRekap) {
+    filterPeriodeRekap.addEventListener('change', () => {
+      const val = filterPeriodeRekap.value;
+      if (val === 'today') {
+        if (wrapperSingleDateRekap) wrapperSingleDateRekap.classList.remove('d-none');
+        if (wrapperRangeTanggalRekap) wrapperRangeTanggalRekap.classList.add('d-none');
+      } else if (val === 'custom') {
+        if (wrapperSingleDateRekap) wrapperSingleDateRekap.classList.add('d-none');
+        if (wrapperRangeTanggalRekap) wrapperRangeTanggalRekap.classList.remove('d-none');
+        const now = new Date();
+        const fmt = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        if (!filterStartDateRekap.value) {
+          const sevenDaysAgo = new Date();
+          sevenDaysAgo.setDate(now.getDate() - 7);
+          filterStartDateRekap.value = fmt(sevenDaysAgo);
+        }
+        if (!filterEndDateRekap.value) filterEndDateRekap.value = fmt(now);
+      } else {
+        if (wrapperSingleDateRekap) wrapperSingleDateRekap.classList.add('d-none');
+        if (wrapperRangeTanggalRekap) wrapperRangeTanggalRekap.classList.add('d-none');
+      }
+      fetchRekapAbsen();
+    });
+  }
+
+  if (filterTanggalRekap) filterTanggalRekap.addEventListener('change', () => fetchRekapAbsen());
+  if (btnApplyRangeRekap) btnApplyRangeRekap.addEventListener('click', () => fetchRekapAbsen());
+  if (filterStartDateRekap) filterStartDateRekap.addEventListener('change', () => {
+    if (filterPeriodeRekap && filterPeriodeRekap.value === 'custom') fetchRekapAbsen();
+  });
+  if (filterEndDateRekap) filterEndDateRekap.addEventListener('change', () => {
+    if (filterPeriodeRekap && filterPeriodeRekap.value === 'custom') fetchRekapAbsen();
+  });
+
+  if (filterKelasRekap) filterKelasRekap.addEventListener('change', applyRekapFilters);
+  if (filterSortRekap) filterSortRekap.addEventListener('change', applyRekapFilters);
+  if (checkKategoriIzin) checkKategoriIzin.addEventListener('change', applyRekapFilters);
+  if (checkKategoriSakit) checkKategoriSakit.addEventListener('change', applyRekapFilters);
+  if (checkKategoriAlfa) checkKategoriAlfa.addEventListener('change', applyRekapFilters);
+  if (filterSearchRekap) filterSearchRekap.addEventListener('input', applyRekapFilters);
+  if (btnRefreshRekap) btnRefreshRekap.addEventListener('click', () => fetchRekapAbsen(true));
+  if (btnPrintRekap) btnPrintRekap.addEventListener('click', printRekapTable);
+
+  // Column headers sorting click
+  document.querySelectorAll('.th-sortable-rekap').forEach(th => {
+    th.addEventListener('click', () => {
+      const col = th.getAttribute('data-sort');
+      if (currentSortRekap.col === col) {
+        currentSortRekap.dir = (currentSortRekap.dir === 'asc') ? 'desc' : 'asc';
+      } else {
+        currentSortRekap.col = col;
+        currentSortRekap.dir = (col === 'nama' || col === 'kelas') ? 'asc' : 'desc';
+      }
+      applyRekapFilters();
+    });
+  });
+
+
+  // =========================================================================
+  // MODUL TAB: CATATAN PERMASALAHAN SESUAI KELAS
+  // =========================================================================
+
+  function getKasusDateRange() {
+    const mode = filterModeWaktuKasus ? filterModeWaktuKasus.value : 'bulan';
+    const now = new Date();
+    const fmt = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+    if (mode === 'pekan') {
+      const sub = filterPilihanPekanKasus ? filterPilihanPekanKasus.value : 'this_week';
+      if (sub === 'this_week') {
+        const day = now.getDay();
+        const diffToMonday = (day === 0 ? 6 : day - 1);
+        const monday = new Date(now);
+        monday.setDate(now.getDate() - diffToMonday);
+        const sunday = new Date(monday);
+        sunday.setDate(monday.getDate() + 6);
+        return { startDate: fmt(monday), endDate: fmt(sunday), label: `Pekan Ini (${formatDateIndo(fmt(monday))} - ${formatDateIndo(fmt(sunday))})` };
+      } else {
+        const day = now.getDay();
+        const diffToLastMonday = (day === 0 ? 6 : day - 1) + 7;
+        const lastMonday = new Date(now);
+        lastMonday.setDate(now.getDate() - diffToLastMonday);
+        const lastSunday = new Date(lastMonday);
+        lastSunday.setDate(lastMonday.getDate() + 6);
+        return { startDate: fmt(lastMonday), endDate: fmt(lastSunday), label: `Pekan Lalu (${formatDateIndo(fmt(lastMonday))} - ${formatDateIndo(fmt(lastSunday))})` };
+      }
+    } else if (mode === 'rentang') {
+      const start = filterStartDateKasus && filterStartDateKasus.value ? filterStartDateKasus.value : fmt(now);
+      const end = filterEndDateKasus && filterEndDateKasus.value ? filterEndDateKasus.value : fmt(now);
+      return { startDate: start, endDate: end, label: `${formatDateIndo(start)} s/d ${formatDateIndo(end)}` };
+    } else {
+      // Mode 'bulan'
+      const sub = filterPilihanBulanKasus ? filterPilihanBulanKasus.value : 'this_month';
+      if (sub === 'this_month') {
+        const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+        const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        return { startDate: fmt(firstDay), endDate: fmt(lastDay), label: `Bulan Ini (${formatDateIndo(fmt(firstDay))} - ${formatDateIndo(fmt(lastDay))})` };
+      } else if (sub === 'last_month') {
+        const firstDay = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const lastDay = new Date(now.getFullYear(), now.getMonth(), 0);
+        return { startDate: fmt(firstDay), endDate: fmt(lastDay), label: `Bulan Lalu (${formatDateIndo(fmt(firstDay))} - ${formatDateIndo(fmt(lastDay))})` };
+      } else {
+        const m = parseInt(filterKasusMonthSelect ? filterKasusMonthSelect.value : (now.getMonth() + 1));
+        const y = parseInt(filterKasusYearSelect ? filterKasusYearSelect.value : now.getFullYear());
+        const firstDay = new Date(y, m - 1, 1);
+        const lastDay = new Date(y, m, 0);
+        return { startDate: fmt(firstDay), endDate: fmt(lastDay), label: `Bulan ${m}/${y} (${formatDateIndo(fmt(firstDay))} - ${formatDateIndo(fmt(lastDay))})` };
+      }
+    }
+  }
+
+  async function fetchCatatanKasus(forceRefresh = false) {
+    const range = getKasusDateRange();
+    if (!feedKasusList) return;
+
+    feedKasusList.innerHTML = `<div class="text-center py-5 text-muted"><div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div> Memuat catatan permasalahan (${range.label})...</div>`;
+    if (tbodyKasusTable) tbodyKasusTable.innerHTML = `<tr><td colspan="7" class="text-center py-5 text-muted"><div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div> Memuat catatan permasalahan...</td></tr>`;
+    showLoading(true);
+
+    try {
+      const payload = { 
+        action: 'get_log_kbm', 
+        startDate: range.startDate, 
+        endDate: range.endDate,
+        tanggal: range.startDate 
+      };
+
+      const response = await fetch("https://script.google.com/macros/s/AKfycbxWjwlc6-mXpOimodZMFvQIC8hwdGRAz78PqnYIfQgSuXKkI9fUP4hXfC5x3QUIypiT/exec?action=get_log_kbm", {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload)
+      });
+      const res = await response.json();
+
+      if (res.success) {
+        currentRawLogData = res.data || [];
+        populateKelasFilterLog(currentRawLogData);
+        populateKelasFilterRekap(currentRawLogData);
+        populateKelasFilterKasus(currentRawLogData);
+        processAndRenderCatatanKasus();
+      } else {
+        Swal.fire('Error', res.message || 'Gagal memuat catatan permasalahan.', 'error');
+        feedKasusList.innerHTML = `<div class="text-center py-5 text-danger">Gagal memuat catatan permasalahan.</div>`;
+      }
+    } catch(e) {
+      console.error(e);
+      Swal.fire('Error', 'Terjadi kesalahan jaringan saat memuat catatan.', 'error');
+      feedKasusList.innerHTML = `<div class="text-center py-5 text-danger">Terjadi kesalahan jaringan.</div>`;
+    } finally {
+      showLoading(false);
+    }
+  }
+
+  function populateKelasFilterKasus(data) {
+    if (!kasusQuickKelasPills) return;
+    const classes = [...new Set(data.map(d => d.kelas).filter(Boolean))].sort();
+    
+    kasusQuickKelasPills.innerHTML = `<span class="small text-muted fw-bold me-1"><i class="bi bi-funnel me-1 text-primary"></i>Pilih Kelas:</span>`;
+    
+    const btnSemua = document.createElement('button');
+    btnSemua.className = `btn btn-sm btn-filter-kelas-pill ${currentSelectedKelasKasus === 'Semua' ? 'active' : ''} rounded-pill px-3 py-0`;
+    btnSemua.innerText = 'Semua Kelas';
+    btnSemua.addEventListener('click', () => {
+      currentSelectedKelasKasus = 'Semua';
+      updateKasusPillActiveState();
+      applyKasusFilters();
+    });
+    kasusQuickKelasPills.appendChild(btnSemua);
+
+    classes.forEach(c => {
+      const btn = document.createElement('button');
+      btn.className = `btn btn-sm btn-filter-kelas-pill ${currentSelectedKelasKasus === c ? 'active' : ''} rounded-pill px-3 py-0`;
+      btn.innerText = `Kelas ${c}`;
+      btn.addEventListener('click', () => {
+        currentSelectedKelasKasus = c;
+        updateKasusPillActiveState();
+        applyKasusFilters();
+      });
+      kasusQuickKelasPills.appendChild(btn);
+    });
+  }
+
+  function updateKasusPillActiveState() {
+    if (!kasusQuickKelasPills) return;
+    const buttons = kasusQuickKelasPills.querySelectorAll('.btn-filter-kelas-pill');
+    buttons.forEach(btn => {
+      const txt = btn.innerText.replace('Kelas ', '').trim();
+      if ((currentSelectedKelasKasus === 'Semua' && txt === 'Semua Kelas') || txt === currentSelectedKelasKasus) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
+  }
+
+  function processAndRenderCatatanKasus() {
+    const rawLogs = currentRawLogData || [];
+    const events = [];
+
+    rawLogs.forEach(logItem => {
+      if (!logItem.status_isi) return;
+
+      const catatanKelas = (logItem.catatan_kelas || '').trim();
+      const santriList = logItem.catatan_santri || (window.santriDetailsCache && window.santriDetailsCache[logItem.id_jurnal]) || [];
+
+      const santriCatatan = [];
+      const santriAlfa = [];
+
+      santriList.forEach(s => {
+        const st = String(s.status || '').toLowerCase().trim();
+        const cat = (s.catatan || '').trim();
+        if (cat) {
+          santriCatatan.push({
+            nama: s.nama || s.nis || 'Santri',
+            status: s.status || 'Hadir',
+            catatan: cat
+          });
+        }
+        if (st.includes('alfa')) {
+          santriAlfa.push({
+            nama: s.nama || s.nis || 'Santri',
+            nis: s.nis || '-'
+          });
+        }
+      });
+
+      const hasCatatanKelas = catatanKelas.length > 0;
+      const hasSantriCatatan = santriCatatan.length > 0;
+      const hasAlfa = santriAlfa.length > 0;
+
+      if (hasCatatanKelas || hasSantriCatatan || hasAlfa) {
+        let tipe = 'Catatan Kejadian Kelas/KBM';
+        if (hasSantriCatatan && hasCatatanKelas) tipe = 'KBM & Adab Santri';
+        else if (hasSantriCatatan) tipe = 'Catatan Adab / Perilaku Santri';
+        else if (hasAlfa && !hasCatatanKelas) tipe = 'Santri Alfa / Mangkir';
+
+        events.push({
+          id_jurnal: logItem.id_jurnal,
+          tanggal: logItem.tanggal,
+          hari: logItem.hari,
+          waktu: logItem.waktu,
+          jam_ke: logItem.jam_ke,
+          kelas: logItem.kelas,
+          pelajaran: logItem.pelajaran,
+          guru: logItem.guru,
+          materi: logItem.materi,
+          catatan_kelas: catatanKelas,
+          santri_catatan: santriCatatan,
+          santri_alfa: santriAlfa,
+          hasCatatanKelas: hasCatatanKelas,
+          hasSantriCatatan: hasSantriCatatan,
+          hasAlfa: hasAlfa,
+          tipe: tipe
+        });
+      }
+    });
+
+    currentKasusProcessedData = events;
+    applyKasusFilters();
+  }
+
+  function applyKasusFilters() {
+    const searchVal = filterSearchKasus ? filterSearchKasus.value.toLowerCase().trim() : '';
+    const tipeVal = filterTipeKasus ? filterTipeKasus.value : 'Semua';
+
+    let filtered = currentKasusProcessedData;
+
+    // Filter Kelas
+    if (currentSelectedKelasKasus !== 'Semua') {
+      filtered = filtered.filter(item => String(item.kelas).toLowerCase().trim() === String(currentSelectedKelasKasus).toLowerCase().trim());
+    }
+
+    // Filter Tipe Permasalahan
+    if (tipeVal === 'kelas') {
+      filtered = filtered.filter(item => item.hasCatatanKelas);
+    } else if (tipeVal === 'santri') {
+      filtered = filtered.filter(item => item.hasSantriCatatan);
+    } else if (tipeVal === 'alfa') {
+      filtered = filtered.filter(item => item.hasAlfa);
+    }
+
+    // Filter Search
+    if (searchVal) {
+      filtered = filtered.filter(item => {
+        const matchText = (item.catatan_kelas + ' ' + item.guru + ' ' + item.pelajaran + ' ' + item.materi + ' ' + item.kelas).toLowerCase();
+        const matchSantri = item.santri_catatan.some(s => (s.nama + ' ' + s.catatan).toLowerCase().includes(searchVal)) ||
+                            item.santri_alfa.some(s => s.nama.toLowerCase().includes(searchVal));
+        return matchText.includes(searchVal) || matchSantri;
+      });
+    }
+
+    updateKasusStats(filtered, currentKasusProcessedData);
+    renderKasusFeed(filtered);
+    renderKasusTable(filtered);
+  }
+
+  function updateKasusStats(filtered, allEvents) {
+    const elTotal = document.getElementById('kasus-stat-total');
+    const elKelas = document.getElementById('kasus-stat-kelas');
+    const elSantri = document.getElementById('kasus-stat-santri');
+    const elKelasCount = document.getElementById('kasus-stat-kelas-count');
+
+    let totalKelasCatatan = 0;
+    let totalSantriCatatan = 0;
+    const distinctClasses = new Set();
+
+    filtered.forEach(item => {
+      if (item.hasCatatanKelas) totalKelasCatatan++;
+      if (item.hasSantriCatatan || item.hasAlfa) totalSantriCatatan += (item.santri_catatan.length + item.santri_alfa.length);
+      if (item.kelas) distinctClasses.add(item.kelas);
+    });
+
+    if (elTotal) elTotal.innerText = filtered.length;
+    if (elKelas) elKelas.innerText = totalKelasCatatan;
+    if (elSantri) elSantri.innerText = totalSantriCatatan;
+    if (elKelasCount) elKelasCount.innerText = distinctClasses.size;
+  }
+
+  function renderKasusFeed(data) {
+    if (!feedKasusList) return;
+    if (!data || data.length === 0) {
+      feedKasusList.innerHTML = `
+        <div class="text-center py-5 text-muted">
+          <div class="mb-3"><i class="bi bi-shield-check display-4 text-success opacity-50"></i></div>
+          <h6 class="fw-bold">Tidak ada catatan permasalahan ditemukan</h6>
+          <p class="small text-muted mb-0">Tidak terdapat kendala KBM, catatan adab santri, maupun santri alfa pada filter dan periode ini.</p>
+        </div>
+      `;
+      return;
+    }
+
+    feedKasusList.innerHTML = '';
+    data.forEach(item => {
+      const card = document.createElement('div');
+      let borderClass = 'border-catatan-kelas';
+      if (item.hasSantriCatatan) borderClass = 'border-catatan-santri';
+      else if (item.hasAlfa && !item.hasCatatanKelas) borderClass = 'border-catatan-alfa';
+
+      card.className = `card border-0 shadow-sm rounded-4 p-3 p-md-4 bg-white kasus-card ${borderClass}`;
+
+      let catatanKelasHtml = '';
+      if (item.hasCatatanKelas) {
+        catatanKelasHtml = `
+          <div class="mb-3">
+            <span class="small fw-bold text-muted d-block mb-1"><i class="bi bi-chat-left-text text-warning me-1"></i>Catatan Pembelajaran / Kelas:</span>
+            <div class="kasus-quote-box border-warning">
+              ${item.catatan_kelas}
+            </div>
+          </div>
+        `;
+      }
+
+      let santriCatatanHtml = '';
+      if (item.santri_catatan && item.santri_catatan.length > 0) {
+        const listBadges = item.santri_catatan.map(s => `
+          <div class="santri-badge-tag mb-1">
+            <i class="bi bi-person-exclamation text-danger"></i>
+            <span class="fw-bold">${s.nama}</span>: <span class="text-dark">${s.catatan}</span>
+          </div>
+        `).join(' ');
+
+        santriCatatanHtml = `
+          <div class="mb-2">
+            <span class="small fw-bold text-muted d-block mb-1"><i class="bi bi-exclamation-circle text-danger me-1"></i>Catatan Adab / Perilaku Santri:</span>
+            <div class="d-flex flex-wrap gap-1">
+              ${listBadges}
+            </div>
+          </div>
+        `;
+      }
+
+      let santriAlfaHtml = '';
+      if (item.santri_alfa && item.santri_alfa.length > 0) {
+        const names = item.santri_alfa.map(s => `<span class="badge bg-danger rounded-pill px-2 py-1">${s.nama}</span>`).join(' ');
+        santriAlfaHtml = `
+          <div class="mt-2">
+            <span class="small fw-bold text-muted d-block mb-1"><i class="bi bi-person-x-fill text-danger me-1"></i>Santri Tidak Hadir (Alfa):</span>
+            <div class="d-flex flex-wrap gap-1">
+              ${names}
+            </div>
+          </div>
+        `;
+      }
+
+      card.innerHTML = `
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2 pb-2 mb-3 border-bottom">
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            <span class="badge bg-primary rounded-pill px-3 py-1 fw-bold">Kelas ${item.kelas}</span>
+            <span class="badge bg-light text-dark border px-2 py-1"><i class="bi bi-calendar3 me-1 text-primary"></i>${item.hari || '-'}, ${formatDateIndo(item.tanggal)}</span>
+            <span class="badge bg-light text-muted border px-2 py-1"><i class="bi bi-clock me-1"></i>${item.waktu || '-'} s/d ${item.jam_ke || '-'}</span>
+          </div>
+          <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill px-3 py-1 small fw-semibold">
+            ${item.tipe}
+          </span>
+        </div>
+
+        <div class="row g-2 mb-3 small">
+          <div class="col-md-6">
+            <span class="text-muted d-block">Mata Pelajaran:</span>
+            <strong class="text-dark fs-6">${item.pelajaran}</strong>
+          </div>
+          <div class="col-md-6">
+            <span class="text-muted d-block">Guru Pengajar:</span>
+            <strong class="text-primary fs-6">${item.guru}</strong>
+          </div>
+          ${item.materi ? `
+          <div class="col-12 mt-1">
+            <span class="text-muted">Materi KBM: </span>
+            <span class="text-dark fw-medium">${item.materi}</span>
+          </div>` : ''}
+        </div>
+
+        ${catatanKelasHtml}
+        ${santriCatatanHtml}
+        ${santriAlfaHtml}
+      `;
+
+      feedKasusList.appendChild(card);
+    });
+  }
+
+  function renderKasusTable(data) {
+    if (!tbodyKasusTable) return;
+    if (!data || data.length === 0) {
+      tbodyKasusTable.innerHTML = `<tr><td colspan="7" class="text-center py-5 text-muted">Tidak ada catatan permasalahan ditemukan.</td></tr>`;
+      return;
+    }
+
+    tbodyKasusTable.innerHTML = '';
+    data.forEach((item, index) => {
+      const tr = document.createElement('tr');
+
+      let deskripsi = item.catatan_kelas || '-';
+      let santriDetail = [];
+      if (item.santri_catatan && item.santri_catatan.length > 0) {
+        santriDetail.push(...item.santri_catatan.map(s => `<span class="badge bg-danger-subtle text-danger border border-danger-subtle">${s.nama}: ${s.catatan}</span>`));
+      }
+      if (item.santri_alfa && item.santri_alfa.length > 0) {
+        santriDetail.push(...item.santri_alfa.map(s => `<span class="badge bg-danger">Alfa: ${s.nama}</span>`));
+      }
+
+      tr.innerHTML = `
+        <td class="text-center text-muted fw-semibold">${index + 1}</td>
+        <td class="text-nowrap small">
+          <div class="fw-bold">${formatDateIndo(item.tanggal)}</div>
+          <span class="text-muted">${item.hari || '-'} (${item.waktu || '-'})</span>
+        </td>
+        <td class="text-center">
+          <span class="badge bg-primary">${item.kelas}</span>
+        </td>
+        <td>
+          <div class="fw-semibold text-dark">${item.pelajaran}</div>
+          <small class="text-muted">${item.guru}</small>
+        </td>
+        <td>
+          <span class="badge bg-light text-dark border small">${item.tipe}</span>
+        </td>
+        <td class="small">
+          <div>${deskripsi}</div>
+          ${item.materi ? `<div class="text-muted fst-italic" style="font-size: 11px;">Materi: ${item.materi}</div>` : ''}
+        </td>
+        <td class="small">
+          <div class="d-flex flex-wrap gap-1">
+            ${santriDetail.length > 0 ? santriDetail.join(' ') : '<span class="text-muted">-</span>'}
+          </div>
+        </td>
+      `;
+      tbodyKasusTable.appendChild(tr);
+    });
+  }
+
+  window.switchKasusView = function(mode) {
+    currentKasusViewMode = mode;
+    if (btnViewFeed && btnViewTable) {
+      if (mode === 'feed') {
+        btnViewFeed.classList.remove('btn-light');
+        btnViewFeed.classList.add('btn-primary');
+        btnViewTable.classList.remove('btn-primary');
+        btnViewTable.classList.add('btn-light');
+        if (containerKasusFeed) containerKasusFeed.classList.remove('d-none');
+        if (containerKasusTable) containerKasusTable.classList.add('d-none');
+      } else {
+        btnViewTable.classList.remove('btn-light');
+        btnViewTable.classList.add('btn-primary');
+        btnViewFeed.classList.remove('btn-primary');
+        btnViewFeed.classList.add('btn-light');
+        if (containerKasusFeed) containerKasusFeed.classList.add('d-none');
+        if (containerKasusTable) containerKasusTable.classList.remove('d-none');
+      }
+    }
+  };
+
+  function printKasusReport() {
+    window.print();
+  }
+
+  // Bind Catatan Kasus Filters
+  if (filterModeWaktuKasus) {
+    filterModeWaktuKasus.addEventListener('change', () => {
+      const mode = filterModeWaktuKasus.value;
+      if (mode === 'bulan') {
+        if (wrapperKasusBulan) wrapperKasusBulan.classList.remove('d-none');
+        if (wrapperKasusPekan) wrapperKasusPekan.classList.add('d-none');
+        if (wrapperKasusRentang) wrapperKasusRentang.classList.add('d-none');
+      } else if (mode === 'pekan') {
+        if (wrapperKasusBulan) wrapperKasusBulan.classList.add('d-none');
+        if (wrapperKasusPekan) wrapperKasusPekan.classList.remove('d-none');
+        if (wrapperKasusRentang) wrapperKasusRentang.classList.add('d-none');
+      } else {
+        if (wrapperKasusBulan) wrapperKasusBulan.classList.add('d-none');
+        if (wrapperKasusPekan) wrapperKasusPekan.classList.add('d-none');
+        if (wrapperKasusRentang) wrapperKasusRentang.classList.remove('d-none');
+      }
+      fetchCatatanKasus();
+    });
+  }
+
+  if (filterPilihanBulanKasus) {
+    filterPilihanBulanKasus.addEventListener('change', () => {
+      const val = filterPilihanBulanKasus.value;
+      if (val === 'specific_month') {
+        if (wrapperSpecificMonth) wrapperSpecificMonth.classList.remove('d-none');
+      } else {
+        if (wrapperSpecificMonth) wrapperSpecificMonth.classList.add('d-none');
+      }
+      fetchCatatanKasus();
+    });
+  }
+
+  if (filterKasusMonthSelect) filterKasusMonthSelect.addEventListener('change', () => fetchCatatanKasus());
+  if (filterKasusYearSelect) filterKasusYearSelect.addEventListener('change', () => fetchCatatanKasus());
+  if (filterPilihanPekanKasus) filterPilihanPekanKasus.addEventListener('change', () => fetchCatatanKasus());
+  if (btnApplyRangeKasus) btnApplyRangeKasus.addEventListener('click', () => fetchCatatanKasus());
+  if (filterStartDateKasus) filterStartDateKasus.addEventListener('change', () => {
+    if (filterModeWaktuKasus && filterModeWaktuKasus.value === 'rentang') fetchCatatanKasus();
+  });
+  if (filterEndDateKasus) filterEndDateKasus.addEventListener('change', () => {
+    if (filterModeWaktuKasus && filterModeWaktuKasus.value === 'rentang') fetchCatatanKasus();
+  });
+
+  if (filterTipeKasus) filterTipeKasus.addEventListener('change', applyKasusFilters);
+  if (filterSearchKasus) filterSearchKasus.addEventListener('input', applyKasusFilters);
+  if (btnRefreshKasus) btnRefreshKasus.addEventListener('click', () => fetchCatatanKasus(true));
+  if (btnPrintKasus) btnPrintKasus.addEventListener('click', printKasusReport);
 
   // Enable cascade selects and filter based on selected Guru
   selGuru.addEventListener('change', updateMapel);
@@ -2512,52 +3579,118 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Check and show install banner on start if not standalone & not dismissed
   setTimeout(() => {
-    const isStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
-    const banner = document.getElementById('pwa-install-banner');
-    if (banner && !sessionStorage.getItem('pwa_banner_dismissed') && !isStandaloneMode) {
-      banner.classList.remove('d-none');
+    if (typeof updatePwaInstallVisibility === 'function') {
+      updatePwaInstallVisibility();
     }
-  }, 1200);
+  }, 1000);
 
 });
 
 // ==================== PWA INSTALLATION MANAGER ====================
 let deferredPwaPrompt = null;
-const isAppStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
+// Deteksi komprehensif apakah aplikasi sudah terinstall di perangkat
+function isAppAlreadyInstalled() {
+  // 1. Display mode standalone / fullscreen / minimal-ui
+  if (window.matchMedia && (
+      window.matchMedia('(display-mode: standalone)').matches ||
+      window.matchMedia('(display-mode: fullscreen)').matches ||
+      window.matchMedia('(display-mode: minimal-ui)').matches
+  )) {
+    return true;
+  }
+  // 2. iOS Safari Web App standalone
+  if (window.navigator && window.navigator.standalone === true) {
+    return true;
+  }
+  // 3. Android TWA / WebAPK
+  if (document.referrer && (document.referrer.includes('android-app://') || document.referrer.includes('app-installed'))) {
+    return true;
+  }
+  // 4. LocalStorage flag yang disimpan saat event 'appinstalled' sukses
+  if (localStorage.getItem('pwa_app_installed') === 'true') {
+    return true;
+  }
+  return false;
+}
+
+// Fungsi sinkronisasi tampilan tombol install & banner
+function updatePwaInstallVisibility() {
+  const btnInstall = document.getElementById('btn-install-pwa');
+  const banner = document.getElementById('pwa-install-banner');
+  const isInstalled = isAppAlreadyInstalled();
+
+  if (isInstalled) {
+    // JIKA SUDAH TERINSTALL: tombol Install App dan Banner WAJIB DISEMBUNYIKAN
+    if (btnInstall) btnInstall.classList.add('d-none');
+    if (banner) banner.classList.add('d-none');
+    console.log('[PWA] Perangkat terdeteksi SUDAH terpasang aplikasi. Tombol Install disembunyikan.');
+  } else {
+    // JIKA BELUM TERINSTALL: aktifkan dan tampilkan tombol Install App
+    if (btnInstall) btnInstall.classList.remove('d-none');
+    if (banner && !sessionStorage.getItem('pwa_banner_dismissed')) {
+      banner.classList.remove('d-none');
+    }
+    console.log('[PWA] Perangkat terdeteksi BELUM memasang aplikasi. Tombol Install diaktifkan.');
+  }
+}
+
+// Jalankan pengecekan deteksi segera
+updatePwaInstallVisibility();
+
+// Deteksi via Web API modern getInstalledRelatedApps (Chrome 80+)
+if ('getInstalledRelatedApps' in navigator) {
+  navigator.getInstalledRelatedApps().then(relatedApps => {
+    if (relatedApps && relatedApps.length > 0) {
+      console.log('[PWA] getInstalledRelatedApps mendeteksi aplikasi sudah terpasang:', relatedApps);
+      localStorage.setItem('pwa_app_installed', 'true');
+      updatePwaInstallVisibility();
+    }
+  }).catch(err => {
+    console.warn('[PWA] getInstalledRelatedApps check error:', err);
+  });
+}
+
+// Pantau perubahan mode tampilan (misal saat diluncurkan sebagai standalone)
+if (window.matchMedia) {
+  const standaloneMedia = window.matchMedia('(display-mode: standalone)');
+  if (standaloneMedia.addEventListener) {
+    standaloneMedia.addEventListener('change', (e) => {
+      if (e.matches) {
+        localStorage.setItem('pwa_app_installed', 'true');
+        updatePwaInstallVisibility();
+      }
+    });
+  }
+}
 
 window.addEventListener('beforeinstallprompt', (e) => {
-  // Prevent default mini-infobar or auto-prompt
   e.preventDefault();
-  // Stash the event so it can be triggered later
   deferredPwaPrompt = e;
   console.log('[PWA] beforeinstallprompt event captured successfully!');
   
-  const btnInstall = document.getElementById('btn-install-pwa');
-  if (btnInstall) {
-    btnInstall.classList.remove('d-none');
-  }
-  
-  const banner = document.getElementById('pwa-install-banner');
-  if (banner && !sessionStorage.getItem('pwa_banner_dismissed') && !isAppStandalone) {
-    banner.classList.remove('d-none');
+  // Hanya tampilkan jika belum terinstall
+  if (!isAppAlreadyInstalled()) {
+    const btnInstall = document.getElementById('btn-install-pwa');
+    if (btnInstall) btnInstall.classList.remove('d-none');
+    const banner = document.getElementById('pwa-install-banner');
+    if (banner && !sessionStorage.getItem('pwa_banner_dismissed')) {
+      banner.classList.remove('d-none');
+    }
   }
 });
 
 window.addEventListener('appinstalled', () => {
   console.log('[PWA] App successfully installed!');
   deferredPwaPrompt = null;
-  const btnInstall = document.getElementById('btn-install-pwa');
-  if (btnInstall) {
-    btnInstall.innerHTML = '<i class="bi bi-check-circle-fill text-success"></i> <span class="d-none d-sm-inline text-success">Terpasang</span>';
-    btnInstall.classList.remove('btn-outline-primary');
-    btnInstall.classList.add('btn-light');
-  }
-  const banner = document.getElementById('pwa-install-banner');
-  if (banner) banner.classList.add('d-none');
+  localStorage.setItem('pwa_app_installed', 'true');
   
+  // Otomatis sembunyikan tombol Install App dan Banner
+  updatePwaInstallVisibility();
+
   if (typeof Swal !== 'undefined') {
     Swal.fire({
-      title: 'Aplikasi Terpasang!',
+      title: 'Aplikasi Berhasil Terpasang!',
       text: 'Presensi KBM kini telah terpasang di layar utama perangkat Anda.',
       icon: 'success',
       timer: 3000,
@@ -2567,11 +3700,12 @@ window.addEventListener('appinstalled', () => {
 });
 
 window.triggerPwaInstall = async function() {
-  if (isAppStandalone) {
+  if (isAppAlreadyInstalled()) {
+    updatePwaInstallVisibility();
     if (typeof Swal !== 'undefined') {
       Swal.fire({
         title: 'Aplikasi Sudah Terpasang',
-        text: 'Anda sedang membuka Presensi KBM dalam mode aplikasi mandiri (PWA).',
+        text: 'Presensi KBM sudah terpasang pada perangkat Anda.',
         icon: 'info',
         confirmButtonText: 'OK'
       });
@@ -2588,8 +3722,8 @@ window.triggerPwaInstall = async function() {
       console.log('[PWA] User choice outcome:', choiceResult.outcome);
       if (choiceResult.outcome === 'accepted') {
         deferredPwaPrompt = null;
-        const banner = document.getElementById('pwa-install-banner');
-        if (banner) banner.classList.add('d-none');
+        localStorage.setItem('pwa_app_installed', 'true');
+        updatePwaInstallVisibility();
       }
     } catch(err) {
       console.warn('[PWA] Native prompt error, showing guide modal:', err);
