@@ -438,5 +438,40 @@ body {
   border: 1px solid #fecdd3;
 }
 
-
-
+/* --- Clickable Stat Summary Cards (Rekap & Kasus) --- */
+.stat-clickable-card {
+  cursor: pointer;
+  position: relative;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+}
+.stat-clickable-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px -6px rgba(0, 0, 0, 0.12) !important;
+}
+.stat-clickable-card:active {
+  transform: translateY(-1px) scale(0.99);
+}
+.stat-card-badge-hint {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 20px;
+  background: rgba(241, 245, 249, 0.85);
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  opacity: 0.75;
+  transition: opacity 0.2s, background 0.2s, color 0.2s;
+}
+.stat-clickable-card:hover .stat-card-badge-hint {
+  opacity: 1;
+  background: #0f172a;
+  color: #f8fafc;
+  border-color: #0f172a;
+}

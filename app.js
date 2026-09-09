@@ -1673,6 +1673,312 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  // =========================================================================
+  // INTERAKSI WIDGET STATISTIK REKAP (Santri Terdampak / Izin / Sakit / Alfa)
+  // =========================================================================
+  let currentRekapWidgetModalType = 'santri';
+  let currentRekapWidgetRawList = [];
+
+  function openRekapWidgetDetail(type) {
+    currentRekapWidgetModalType = type;
+    const modalEl = document.getElementById('modal-widget-detail-rekap');
+    if (!modalEl) return;
+
+    const headerEl = document.getElementById('modal-widget-rekap-header');
+    const iconBox = document.getElementById('modal-widget-rekap-icon-box');
+    const iconEl = document.getElementById('modal-widget-rekap-icon');
+    const titleEl = document.getElementById('modal-widget-rekap-title');
+    const subtitleEl = document.getElementById('modal-widget-rekap-subtitle');
+    const closeBtn = document.getElementById('modal-widget-rekap-close-btn');
+    const filterKelasEl = document.getElementById('modal-widget-rekap-filter-kelas');
+    const searchInp = document.getElementById('modal-widget-rekap-search');
+
+    if (searchInp) searchInp.value = '';
+
+    // Populate kelas dropdown
+    if (filterKelasEl) {
+      const distinctClasses = [...new Set((currentRekapProcessedData || []).map(d => d.kelas).filter(Boolean))].sort();
+      filterKelasEl.innerHTML = '<option value="Semua">Semua Kelas</option>' + 
+        distinctClasses.map(c => `<option value="${c}">Kelas ${c}</option>`).join('');
+      if (filterKelasRekap && filterKelasRekap.value !== 'Semua') {
+        filterKelasEl.value = filterKelasRekap.value;
+      }
+    }
+
+    // Styling & texts per type
+    if (type === 'santri') {
+      if (headerEl) headerEl.className = 'modal-header border-0 py-3 px-4 bg-primary text-white';
+      if (iconBox) iconBox.className = 'bg-white rounded-3 p-2 d-flex align-items-center justify-content-center shadow-sm';
+      if (iconEl) iconEl.className = 'bi bi-people-fill fs-5 text-primary';
+      if (titleEl) titleEl.innerText = 'Daftar Santri Terdampak Ketidakhadiran';
+      if (subtitleEl) subtitleEl.innerText = 'Daftar seluruh santri yang memiliki catatan ketidakhadiran pada periode aktif';
+      if (closeBtn) closeBtn.className = 'btn-close btn-close-white';
+    } else if (type === 'izin') {
+      if (headerEl) headerEl.className = 'modal-header border-0 py-3 px-4 bg-warning text-dark';
+      if (iconBox) iconBox.className = 'bg-white rounded-3 p-2 d-flex align-items-center justify-content-center shadow-sm';
+      if (iconEl) iconEl.className = 'bi bi-info-circle-fill fs-5 text-warning';
+      if (titleEl) titleEl.innerText = 'Rincian Seluruh Ketidakhadiran: IZIN';
+      if (subtitleEl) subtitleEl.innerText = 'Daftar seluruh jam pelajaran izin santri beserta mapel, guru & alasan';
+      if (closeBtn) closeBtn.className = 'btn-close';
+    } else if (type === 'sakit') {
+      if (headerEl) headerEl.className = 'modal-header border-0 py-3 px-4 bg-info text-dark';
+      if (iconBox) iconBox.className = 'bg-white rounded-3 p-2 d-flex align-items-center justify-content-center shadow-sm';
+      if (iconEl) iconEl.className = 'bi bi-heart-pulse-fill fs-5 text-info';
+      if (titleEl) titleEl.innerText = 'Rincian Seluruh Ketidakhadiran: SAKIT';
+      if (subtitleEl) subtitleEl.innerText = 'Daftar seluruh jam pelajaran sakit santri pada periode aktif';
+      if (closeBtn) closeBtn.className = 'btn-close';
+    } else if (type === 'alfa') {
+      if (headerEl) headerEl.className = 'modal-header border-0 py-3 px-4 bg-danger text-white';
+      if (iconBox) iconBox.className = 'bg-white rounded-3 p-2 d-flex align-items-center justify-content-center shadow-sm';
+      if (iconEl) iconEl.className = 'bi bi-exclamation-octagon-fill fs-5 text-danger';
+      if (titleEl) titleEl.innerText = 'Rincian Seluruh Ketidakhadiran: ALFA (Mangkir)';
+      if (subtitleEl) subtitleEl.innerText = 'Daftar seluruh ketidakhadiran tanpa izin/keterangan yang memerlukan tindakan';
+      if (closeBtn) closeBtn.className = 'btn-close btn-close-white';
+    }
+
+    // Siapkan list data
+    if (type === 'santri') {
+      currentRekapWidgetRawList = (currentRekapProcessedData || []).filter(s => (s.izin + s.sakit + s.alfa) > 0);
+    } else {
+      const events = [];
+      (currentRekapProcessedData || []).forEach(s => {
+        (s.records || []).forEach(r => {
+          if (r.status && r.status.toLowerCase() === type.toLowerCase()) {
+            events.push({
+              nis: s.nis,
+              nama: s.nama,
+              kelas: s.kelas,
+              id: s.id,
+              tanggal: r.tanggal,
+              hari: r.hari,
+              waktu: r.waktu,
+              pelajaran: r.pelajaran,
+              guru: r.guru,
+              status: r.status,
+              catatan: r.catatan
+            });
+          }
+        });
+      });
+      events.sort((a, b) => b.tanggal.localeCompare(a.tanggal));
+      currentRekapWidgetRawList = events;
+    }
+
+    renderRekapWidgetModalBody();
+
+    const bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    bsModal.show();
+  }
+
+  function renderRekapWidgetModalBody() {
+    const bodyEl = document.getElementById('modal-widget-rekap-body');
+    const countTxt = document.getElementById('modal-widget-rekap-count-txt');
+    const filterKelasEl = document.getElementById('modal-widget-rekap-filter-kelas');
+    const searchInp = document.getElementById('modal-widget-rekap-search');
+    if (!bodyEl) return;
+
+    const kelasVal = filterKelasEl ? filterKelasEl.value : 'Semua';
+    const query = searchInp ? searchInp.value.toLowerCase().trim() : '';
+
+    let filtered = currentRekapWidgetRawList || [];
+
+    if (kelasVal !== 'Semua') {
+      filtered = filtered.filter(item => String(item.kelas).toLowerCase().trim() === String(kelasVal).toLowerCase().trim());
+    }
+
+    if (query) {
+      filtered = filtered.filter(item => {
+        const text = (item.nama + ' ' + (item.nis || '') + ' ' + (item.kelas || '') + ' ' + (item.pelajaran || '') + ' ' + (item.guru || '') + ' ' + (item.catatan || '')).toLowerCase();
+        return text.includes(query);
+      });
+    }
+
+    if (countTxt) {
+      if (currentRekapWidgetModalType === 'santri') {
+        countTxt.innerText = `${filtered.length} Santri`;
+      } else {
+        countTxt.innerText = `${filtered.length} Jam Pelajaran (${currentRekapWidgetModalType.toUpperCase()})`;
+      }
+    }
+
+    if (filtered.length === 0) {
+      bodyEl.innerHTML = `
+        <div class="text-center py-5 text-muted">
+          <i class="bi bi-inbox fs-1 text-secondary opacity-50 d-block mb-2"></i>
+          Tidak ada data yang cocok dengan pencarian atau filter kelas ini.
+        </div>
+      `;
+      return;
+    }
+
+    if (currentRekapWidgetModalType === 'santri') {
+      const rows = filtered.map((s, idx) => `
+        <tr>
+          <td class="text-center text-muted small" style="width: 40px;">${idx + 1}</td>
+          <td>
+            <div class="fw-bold text-dark">${s.nama}</div>
+            <small class="text-muted font-monospace" style="font-size: 11px;">NIS: ${s.nis}</small>
+          </td>
+          <td class="text-center">
+            <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2 py-1">${s.kelas}</span>
+          </td>
+          <td class="text-center">${s.izin > 0 ? `<span class="badge bg-warning text-dark rounded-pill px-2 py-1 fw-bold">${s.izin} JP</span>` : '<span class="text-muted small">-</span>'}</td>
+          <td class="text-center">${s.sakit > 0 ? `<span class="badge bg-info text-dark rounded-pill px-2 py-1 fw-bold">${s.sakit} JP</span>` : '<span class="text-muted small">-</span>'}</td>
+          <td class="text-center">${s.alfa > 0 ? `<span class="badge bg-danger rounded-pill px-2 py-1 fw-bold">${s.alfa} JP</span>` : '<span class="text-muted small">-</span>'}</td>
+          <td class="text-center">
+            <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-3 py-1 fw-bold fs-6">${s.izin + s.sakit + s.alfa} JP</span>
+          </td>
+          <td class="text-center text-nowrap">
+            <button class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 fw-semibold btn-modal-jump-santri" data-id="${s.id}" title="Buka Riwayat Lengkap Santri">
+              <i class="bi bi-journal-text me-1"></i> Rincian
+            </button>
+          </td>
+        </tr>
+      `).join('');
+
+      bodyEl.innerHTML = `
+        <div class="table-responsive" style="max-height: 480px;">
+          <table class="table table-sm table-hover align-middle mb-0">
+            <thead class="table-light text-muted small position-sticky top-0 shadow-sm">
+              <tr>
+                <th class="text-center" style="width: 40px;">No</th>
+                <th>Nama Santri</th>
+                <th class="text-center">Kelas</th>
+                <th class="text-center">Izin</th>
+                <th class="text-center">Sakit</th>
+                <th class="text-center">Alfa</th>
+                <th class="text-center">Total JP</th>
+                <th class="text-center">Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows}
+            </tbody>
+          </table>
+        </div>
+      `;
+
+      bodyEl.querySelectorAll('.btn-modal-jump-santri').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const sId = e.currentTarget.getAttribute('data-id');
+          const modalEl = document.getElementById('modal-widget-detail-rekap');
+          if (modalEl) bootstrap.Modal.getInstance(modalEl)?.hide();
+          setTimeout(() => {
+            openModalDetailRekapSantri(sId);
+          }, 300);
+        });
+      });
+
+    } else {
+      const badgeStatus = (st) => {
+        if (!st) return '';
+        if (st.toLowerCase() === 'izin') return '<span class="badge bg-warning text-dark fw-bold">Izin</span>';
+        if (st.toLowerCase() === 'sakit') return '<span class="badge bg-info text-dark fw-bold">Sakit</span>';
+        if (st.toLowerCase() === 'alfa') return '<span class="badge bg-danger fw-bold">Alfa</span>';
+        return `<span class="badge bg-secondary">${st}</span>`;
+      };
+
+      const rows = filtered.map((e, idx) => `
+        <tr>
+          <td class="text-center text-muted small" style="width: 40px;">${idx + 1}</td>
+          <td class="text-nowrap small">
+            <div class="fw-bold text-dark">${e.hari || '-'}, ${formatDateIndo(e.tanggal)}</div>
+            <span class="text-muted" style="font-size: 11px;">Pukul ${e.waktu || '-'}</span>
+          </td>
+          <td class="text-center">
+            <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2 py-1">${e.kelas}</span>
+          </td>
+          <td>
+            <div class="fw-bold text-dark">${e.nama}</div>
+            <small class="text-muted font-monospace" style="font-size: 11px;">NIS: ${e.nis}</small>
+          </td>
+          <td>
+            <div class="fw-medium text-dark">${e.pelajaran}</div>
+            <small class="text-muted">Guru: ${e.guru}</small>
+          </td>
+          <td class="text-center">${badgeStatus(e.status)}</td>
+          <td class="small text-muted">${e.catatan ? `<div class="p-1 px-2 rounded bg-light border">${e.catatan}</div>` : '<span class="text-muted">-</span>'}</td>
+        </tr>
+      `).join('');
+
+      bodyEl.innerHTML = `
+        <div class="table-responsive" style="max-height: 480px;">
+          <table class="table table-sm table-hover align-middle mb-0">
+            <thead class="table-light text-muted small position-sticky top-0 shadow-sm">
+              <tr>
+                <th class="text-center" style="width: 40px;">No</th>
+                <th>Tanggal & Waktu</th>
+                <th class="text-center">Kelas</th>
+                <th>Santri</th>
+                <th>Mata Pelajaran & Guru</th>
+                <th class="text-center">Status</th>
+                <th>Keterangan / Alasan</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+  }
+
+  // Bind Event Modal Widget Rekap Controls
+  const modalRekapFilterKelas = document.getElementById('modal-widget-rekap-filter-kelas');
+  const modalRekapSearch = document.getElementById('modal-widget-rekap-search');
+  if (modalRekapFilterKelas) modalRekapFilterKelas.addEventListener('change', renderRekapWidgetModalBody);
+  if (modalRekapSearch) modalRekapSearch.addEventListener('input', renderRekapWidgetModalBody);
+
+  const btnApplyRekapWidgetFilter = document.getElementById('btn-apply-rekap-widget-filter');
+  if (btnApplyRekapWidgetFilter) {
+    btnApplyRekapWidgetFilter.addEventListener('click', () => {
+      const t = currentRekapWidgetModalType;
+      if (t === 'santri') {
+        if (checkKategoriIzin) checkKategoriIzin.checked = true;
+        if (checkKategoriSakit) checkKategoriSakit.checked = true;
+        if (checkKategoriAlfa) checkKategoriAlfa.checked = true;
+      } else if (t === 'izin') {
+        if (checkKategoriIzin) checkKategoriIzin.checked = true;
+        if (checkKategoriSakit) checkKategoriSakit.checked = false;
+        if (checkKategoriAlfa) checkKategoriAlfa.checked = false;
+        if (filterSortRekap) filterSortRekap.value = 'izin';
+      } else if (t === 'sakit') {
+        if (checkKategoriIzin) checkKategoriIzin.checked = false;
+        if (checkKategoriSakit) checkKategoriSakit.checked = true;
+        if (checkKategoriAlfa) checkKategoriAlfa.checked = false;
+        if (filterSortRekap) filterSortRekap.value = 'sakit';
+      } else if (t === 'alfa') {
+        if (checkKategoriIzin) checkKategoriIzin.checked = false;
+        if (checkKategoriSakit) checkKategoriSakit.checked = false;
+        if (checkKategoriAlfa) checkKategoriAlfa.checked = true;
+        if (filterSortRekap) filterSortRekap.value = 'alfa';
+      }
+      if (modalRekapFilterKelas && filterKelasRekap) {
+        filterKelasRekap.value = modalRekapFilterKelas.value;
+      }
+      applyRekapFilters();
+      const modalEl = document.getElementById('modal-widget-detail-rekap');
+      if (modalEl) bootstrap.Modal.getInstance(modalEl)?.hide();
+    });
+  }
+
+  const btnPrintRekapWidgetDetail = document.getElementById('btn-print-rekap-widget-detail');
+  if (btnPrintRekapWidgetDetail) {
+    btnPrintRekapWidgetDetail.addEventListener('click', () => window.print());
+  }
+
+  // Bind Card Click Events (Rekap)
+  const cardRekapSantri = document.getElementById('card-rekap-santri');
+  const cardRekapIzin = document.getElementById('card-rekap-izin');
+  const cardRekapSakit = document.getElementById('card-rekap-sakit');
+  const cardRekapAlfa = document.getElementById('card-rekap-alfa');
+
+  if (cardRekapSantri) cardRekapSantri.addEventListener('click', () => openRekapWidgetDetail('santri'));
+  if (cardRekapIzin) cardRekapIzin.addEventListener('click', () => openRekapWidgetDetail('izin'));
+  if (cardRekapSakit) cardRekapSakit.addEventListener('click', () => openRekapWidgetDetail('sakit'));
+  if (cardRekapAlfa) cardRekapAlfa.addEventListener('click', () => openRekapWidgetDetail('alfa'));
+
 
   // =========================================================================
   // MODUL TAB: CATATAN PERMASALAHAN SESUAI KELAS
@@ -2160,6 +2466,377 @@ document.addEventListener('DOMContentLoaded', () => {
   if (filterSearchKasus) filterSearchKasus.addEventListener('input', applyKasusFilters);
   if (btnRefreshKasus) btnRefreshKasus.addEventListener('click', () => fetchCatatanKasus(true));
   if (btnPrintKasus) btnPrintKasus.addEventListener('click', printKasusReport);
+
+  // =========================================================================
+  // INTERAKSI WIDGET STATISTIK CATATAN KASUS (Total / KBM / Kasus Santri / Kelas)
+  // =========================================================================
+  let currentKasusWidgetModalType = 'total';
+
+  function openKasusWidgetDetail(type) {
+    currentKasusWidgetModalType = type;
+    const modalEl = document.getElementById('modal-widget-detail-kasus');
+    if (!modalEl) return;
+
+    const headerEl = document.getElementById('modal-widget-kasus-header');
+    const iconBox = document.getElementById('modal-widget-kasus-icon-box');
+    const iconEl = document.getElementById('modal-widget-kasus-icon');
+    const titleEl = document.getElementById('modal-widget-kasus-title');
+    const subtitleEl = document.getElementById('modal-widget-kasus-subtitle');
+    const closeBtn = document.getElementById('modal-widget-kasus-close-btn');
+    const filterKelasEl = document.getElementById('modal-widget-kasus-filter-kelas');
+    const searchInp = document.getElementById('modal-widget-kasus-search');
+
+    if (searchInp) searchInp.value = '';
+
+    // Populate kelas dropdown
+    if (filterKelasEl) {
+      const distinctClasses = [...new Set((currentKasusProcessedData || []).map(d => d.kelas).filter(Boolean))].sort();
+      filterKelasEl.innerHTML = '<option value="Semua">Semua Kelas</option>' + 
+        distinctClasses.map(c => `<option value="${c}">Kelas ${c}</option>`).join('');
+      if (currentSelectedKelasKasus !== 'Semua') {
+        filterKelasEl.value = currentSelectedKelasKasus;
+      }
+    }
+
+    // Styling & texts per type
+    if (type === 'total') {
+      if (headerEl) headerEl.className = 'modal-header border-0 py-3 px-4 bg-warning text-dark';
+      if (iconBox) iconBox.className = 'bg-white rounded-3 p-2 d-flex align-items-center justify-content-center shadow-sm';
+      if (iconEl) iconEl.className = 'bi bi-journal-text fs-5 text-warning';
+      if (titleEl) titleEl.innerText = 'Rincian Seluruh Catatan Kejadian KBM';
+      if (subtitleEl) subtitleEl.innerText = 'Daftar seluruh catatan kejadian pembelajaran, kendala kelas, dan adab santri';
+      if (closeBtn) closeBtn.className = 'btn-close';
+    } else if (type === 'kbm') {
+      if (headerEl) headerEl.className = 'modal-header border-0 py-3 px-4 bg-primary text-white';
+      if (iconBox) iconBox.className = 'bg-white rounded-3 p-2 d-flex align-items-center justify-content-center shadow-sm';
+      if (iconEl) iconEl.className = 'bi bi-chat-left-quote-fill fs-5 text-primary';
+      if (titleEl) titleEl.innerText = 'Rincian Catatan Pembelajaran & Kendala Kelas';
+      if (subtitleEl) subtitleEl.innerText = 'Catatan guru terkait kondisi kelas, fasilitas, penguasaan materi, dan dinamika KBM';
+      if (closeBtn) closeBtn.className = 'btn-close btn-close-white';
+    } else if (type === 'santri') {
+      if (headerEl) headerEl.className = 'modal-header border-0 py-3 px-4 bg-danger text-white';
+      if (iconBox) iconBox.className = 'bg-white rounded-3 p-2 d-flex align-items-center justify-content-center shadow-sm';
+      if (iconEl) iconEl.className = 'bi bi-person-exclamation fs-5 text-danger';
+      if (titleEl) titleEl.innerText = 'Rincian Kasus Adab & Santri Khusus';
+      if (subtitleEl) subtitleEl.innerText = 'Catatan guru khusus mengenai perilaku santri yang memerlukan perhatian dewan guru';
+      if (closeBtn) closeBtn.className = 'btn-close btn-close-white';
+    } else if (type === 'kelas_count') {
+      if (headerEl) headerEl.className = 'modal-header border-0 py-3 px-4 bg-dark text-white';
+      if (iconBox) iconBox.className = 'bg-white rounded-3 p-2 d-flex align-items-center justify-content-center shadow-sm';
+      if (iconEl) iconEl.className = 'bi bi-building fs-5 text-secondary';
+      if (titleEl) titleEl.innerText = 'Rekapitulasi Sebaran Permasalahan Per Kelas';
+      if (subtitleEl) subtitleEl.innerText = 'Perbandingan tingkat kejadian kendala KBM dan catatan adab antar kelas';
+      if (closeBtn) closeBtn.className = 'btn-close btn-close-white';
+    }
+
+    renderKasusWidgetModalBody();
+
+    const bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    bsModal.show();
+  }
+
+  function renderKasusWidgetModalBody() {
+    const bodyEl = document.getElementById('modal-widget-kasus-body');
+    const countTxt = document.getElementById('modal-widget-kasus-count-txt');
+    const filterKelasEl = document.getElementById('modal-widget-kasus-filter-kelas');
+    const searchInp = document.getElementById('modal-widget-kasus-search');
+    if (!bodyEl) return;
+
+    const kelasVal = filterKelasEl ? filterKelasEl.value : 'Semua';
+    const query = searchInp ? searchInp.value.toLowerCase().trim() : '';
+
+    let data = currentKasusProcessedData || [];
+
+    if (kelasVal !== 'Semua') {
+      data = data.filter(item => String(item.kelas).toLowerCase().trim() === String(kelasVal).toLowerCase().trim());
+    }
+
+    if (currentKasusWidgetModalType === 'kbm') {
+      data = data.filter(item => item.hasCatatanKelas);
+    } else if (currentKasusWidgetModalType === 'santri') {
+      data = data.filter(item => item.hasSantriCatatan || item.hasAlfa);
+    }
+
+    if (query) {
+      data = data.filter(item => {
+        const text = (item.catatan_kelas + ' ' + item.guru + ' ' + item.pelajaran + ' ' + item.materi + ' ' + item.kelas).toLowerCase();
+        const matchSantri = (item.santri_catatan || []).some(s => (s.nama + ' ' + s.catatan).toLowerCase().includes(query)) ||
+                            (item.santri_alfa || []).some(s => s.nama.toLowerCase().includes(query));
+        return text.includes(query) || matchSantri;
+      });
+    }
+
+    // Jika tipe adalah kelas_count, buat ringkasan agregat per kelas
+    if (currentKasusWidgetModalType === 'kelas_count') {
+      const classMap = {};
+      (currentKasusProcessedData || []).forEach(item => {
+        const kl = item.kelas || 'Lainnya';
+        if (!classMap[kl]) {
+          classMap[kl] = { kelas: kl, total: 0, kbm: 0, santri: 0, alfa: 0, items: [] };
+        }
+        classMap[kl].total++;
+        if (item.hasCatatanKelas) classMap[kl].kbm++;
+        if (item.hasSantriCatatan) classMap[kl].santri += item.santri_catatan.length;
+        if (item.hasAlfa) classMap[kl].alfa += item.santri_alfa.length;
+        classMap[kl].items.push(item);
+      });
+
+      let classList = Object.values(classMap);
+      if (query) {
+        classList = classList.filter(c => c.kelas.toLowerCase().includes(query));
+      }
+      classList.sort((a, b) => b.total - a.total);
+
+      if (countTxt) countTxt.innerText = `${classList.length} Kelas Memiliki Catatan`;
+
+      if (classList.length === 0) {
+        bodyEl.innerHTML = `<div class="text-center py-5 text-muted"><i class="bi bi-shield-check fs-1 text-success opacity-50 d-block mb-2"></i>Tidak ada data kelas yang terpantau.</div>`;
+        return;
+      }
+
+      const rows = classList.map((c, idx) => `
+        <tr>
+          <td class="text-center text-muted small">${idx + 1}</td>
+          <td>
+            <span class="badge bg-primary fs-6 px-3 py-1 rounded-pill">Kelas ${c.kelas}</span>
+          </td>
+          <td class="text-center">
+            <span class="badge bg-warning text-dark rounded-pill px-3 py-1 fw-bold fs-6">${c.total} Kejadian</span>
+          </td>
+          <td class="text-center">
+            <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2 py-1">${c.kbm} Catatan</span>
+          </td>
+          <td class="text-center">
+            <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2 py-1">${c.santri} Kasus</span>
+          </td>
+          <td class="text-center">
+            <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill px-2 py-1">${c.alfa} Alfa</span>
+          </td>
+          <td class="text-center text-nowrap">
+            <button class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 fw-semibold btn-filter-this-class" data-kelas="${c.kelas}">
+              <i class="bi bi-funnel me-1"></i> Buka Kasus Kelas
+            </button>
+          </td>
+        </tr>
+      `).join('');
+
+      bodyEl.innerHTML = `
+        <div class="table-responsive" style="max-height: 480px;">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light text-muted small position-sticky top-0 shadow-sm">
+              <tr>
+                <th class="text-center" style="width: 40px;">No</th>
+                <th>Tingkat / Kelas</th>
+                <th class="text-center">Total Kejadian</th>
+                <th class="text-center">Catatan KBM</th>
+                <th class="text-center">Kasus Adab Santri</th>
+                <th class="text-center">Santri Alfa</th>
+                <th class="text-center">Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows}
+            </tbody>
+          </table>
+        </div>
+      `;
+
+      bodyEl.querySelectorAll('.btn-filter-this-class').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const targetKelas = e.currentTarget.getAttribute('data-kelas');
+          currentSelectedKelasKasus = targetKelas;
+          updateKasusPillActiveState();
+          applyKasusFilters();
+          const modalEl = document.getElementById('modal-widget-detail-kasus');
+          if (modalEl) bootstrap.Modal.getInstance(modalEl)?.hide();
+        });
+      });
+      return;
+    }
+
+    if (countTxt) countTxt.innerText = `${data.length} Kejadian Tercatat`;
+
+    if (data.length === 0) {
+      bodyEl.innerHTML = `<div class="text-center py-5 text-muted"><i class="bi bi-shield-check fs-1 text-success opacity-50 d-block mb-2"></i>Tidak ada catatan permasalahan yang sesuai filter.</div>`;
+      return;
+    }
+
+    if (currentKasusWidgetModalType === 'santri') {
+      const listSantriRows = [];
+      data.forEach(item => {
+        (item.santri_catatan || []).forEach(s => {
+          listSantriRows.push({
+            tanggal: item.tanggal,
+            hari: item.hari,
+            waktu: item.waktu,
+            kelas: item.kelas,
+            pelajaran: item.pelajaran,
+            guru: item.guru,
+            nama: s.nama,
+            tipe: 'Catatan Adab / Perilaku',
+            catatan: s.catatan
+          });
+        });
+        (item.santri_alfa || []).forEach(s => {
+          listSantriRows.push({
+            tanggal: item.tanggal,
+            hari: item.hari,
+            waktu: item.waktu,
+            kelas: item.kelas,
+            pelajaran: item.pelajaran,
+            guru: item.guru,
+            nama: s.nama,
+            tipe: 'Alfa / Mangkir',
+            catatan: 'Tidak hadir tanpa keterangan (Alfa)'
+          });
+        });
+      });
+
+      listSantriRows.sort((a, b) => b.tanggal.localeCompare(a.tanggal));
+
+      const rows = listSantriRows.map((s, idx) => `
+        <tr>
+          <td class="text-center text-muted small" style="width: 40px;">${idx + 1}</td>
+          <td class="text-nowrap small">
+            <div class="fw-bold text-dark">${s.hari || '-'}, ${formatDateIndo(s.tanggal)}</div>
+            <span class="text-muted" style="font-size: 11px;">Pukul ${s.waktu || '-'}</span>
+          </td>
+          <td class="text-center">
+            <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2 py-1">${s.kelas}</span>
+          </td>
+          <td>
+            <div class="fw-bold text-dark">${s.nama}</div>
+          </td>
+          <td>
+            <div class="fw-medium text-dark">${s.pelajaran}</div>
+            <small class="text-muted">Guru: ${s.guru}</small>
+          </td>
+          <td>
+            <span class="badge ${s.tipe.includes('Alfa') ? 'bg-danger' : 'bg-warning text-dark'} rounded-pill px-2 py-1">${s.tipe}</span>
+          </td>
+          <td class="small text-danger fw-medium">
+            <div class="p-2 rounded bg-danger-subtle border border-danger-subtle">${s.catatan}</div>
+          </td>
+        </tr>
+      `).join('');
+
+      bodyEl.innerHTML = `
+        <div class="table-responsive" style="max-height: 480px;">
+          <table class="table table-sm table-hover align-middle mb-0">
+            <thead class="table-light text-muted small position-sticky top-0 shadow-sm">
+              <tr>
+                <th class="text-center" style="width: 40px;">No</th>
+                <th>Tanggal & Waktu</th>
+                <th class="text-center">Kelas</th>
+                <th>Nama Santri</th>
+                <th>Mata Pelajaran & Guru</th>
+                <th>Kategori</th>
+                <th>Catatan Adab / Keterangan</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows}
+            </tbody>
+          </table>
+        </div>
+      `;
+    } else {
+      const cardsHtml = data.map((item, idx) => {
+        let santriDetail = [];
+        if (item.santri_catatan && item.santri_catatan.length > 0) {
+          santriDetail.push(...item.santri_catatan.map(s => `
+            <div class="santri-badge-tag mb-1">
+              <i class="bi bi-person-exclamation text-danger"></i>
+              <span class="fw-bold">${s.nama}</span>: <span>${s.catatan}</span>
+            </div>
+          `));
+        }
+        if (item.santri_alfa && item.santri_alfa.length > 0) {
+          santriDetail.push(...item.santri_alfa.map(s => `<span class="badge bg-danger rounded-pill px-2 py-1 me-1">Alfa: ${s.nama}</span>`));
+        }
+
+        return `
+          <div class="card border rounded-4 p-3 mb-3 shadow-sm bg-white">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 pb-2 mb-2 border-bottom">
+              <div class="d-flex align-items-center gap-2 flex-wrap">
+                <span class="badge bg-primary rounded-pill px-3 py-1 fw-bold">Kelas ${item.kelas}</span>
+                <span class="badge bg-light text-dark border px-2 py-1"><i class="bi bi-calendar3 me-1 text-primary"></i>${item.hari || '-'}, ${formatDateIndo(item.tanggal)}</span>
+                <span class="badge bg-light text-muted border px-2 py-1"><i class="bi bi-clock me-1"></i>${item.waktu || '-'}</span>
+              </div>
+              <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill px-2 py-1 small">
+                ${item.tipe}
+              </span>
+            </div>
+            <div class="row g-2 mb-2 small">
+              <div class="col-md-6">
+                <span class="text-muted">Pelajaran: </span><strong class="text-dark">${item.pelajaran}</strong>
+              </div>
+              <div class="col-md-6">
+                <span class="text-muted">Guru: </span><strong class="text-primary">${item.guru}</strong>
+              </div>
+              ${item.materi ? `<div class="col-12"><span class="text-muted">Materi: </span><span class="text-dark fst-italic">${item.materi}</span></div>` : ''}
+            </div>
+            ${item.hasCatatanKelas ? `
+              <div class="mt-2">
+                <span class="small fw-bold text-muted d-block mb-1"><i class="bi bi-chat-left-text text-warning me-1"></i>Catatan Kelas / Kendala KBM:</span>
+                <div class="kasus-quote-box border-warning">${item.catatan_kelas}</div>
+              </div>
+            ` : ''}
+            ${santriDetail.length > 0 ? `
+              <div class="mt-2">
+                <span class="small fw-bold text-muted d-block mb-1"><i class="bi bi-person-exclamation text-danger me-1"></i>Catatan Santri Terkait:</span>
+                <div class="d-flex flex-wrap gap-1">${santriDetail.join(' ')}</div>
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }).join('');
+
+      bodyEl.innerHTML = `<div style="max-height: 480px; overflow-y: auto; padding-right: 4px;">${cardsHtml}</div>`;
+    }
+  }
+
+  // Bind Event Modal Widget Kasus Controls
+  const modalKasusFilterKelas = document.getElementById('modal-widget-kasus-filter-kelas');
+  const modalKasusSearch = document.getElementById('modal-widget-kasus-search');
+  if (modalKasusFilterKelas) modalKasusFilterKelas.addEventListener('change', renderKasusWidgetModalBody);
+  if (modalKasusSearch) modalKasusSearch.addEventListener('input', renderKasusWidgetModalBody);
+
+  const btnApplyKasusWidgetFilter = document.getElementById('btn-apply-kasus-widget-filter');
+  if (btnApplyKasusWidgetFilter) {
+    btnApplyKasusWidgetFilter.addEventListener('click', () => {
+      const t = currentKasusWidgetModalType;
+      if (filterTipeKasus) {
+        if (t === 'kbm') filterTipeKasus.value = 'kelas';
+        else if (t === 'santri') filterTipeKasus.value = 'santri';
+        else filterTipeKasus.value = 'Semua';
+      }
+      const modalKelas = document.getElementById('modal-widget-kasus-filter-kelas');
+      if (modalKelas) {
+        currentSelectedKelasKasus = modalKelas.value;
+        updateKasusPillActiveState();
+      }
+      applyKasusFilters();
+      const modalEl = document.getElementById('modal-widget-detail-kasus');
+      if (modalEl) bootstrap.Modal.getInstance(modalEl)?.hide();
+    });
+  }
+
+  const btnPrintKasusWidgetDetail = document.getElementById('btn-print-kasus-widget-detail');
+  if (btnPrintKasusWidgetDetail) {
+    btnPrintKasusWidgetDetail.addEventListener('click', () => window.print());
+  }
+
+  // Bind Card Click Events (Kasus)
+  const cardKasusTotal = document.getElementById('card-kasus-total');
+  const cardKasusKbm = document.getElementById('card-kasus-kbm');
+  const cardKasusSantri = document.getElementById('card-kasus-santri');
+  const cardKasusKelasCount = document.getElementById('card-kasus-kelas-count');
+
+  if (cardKasusTotal) cardKasusTotal.addEventListener('click', () => openKasusWidgetDetail('total'));
+  if (cardKasusKbm) cardKasusKbm.addEventListener('click', () => openKasusWidgetDetail('kbm'));
+  if (cardKasusSantri) cardKasusSantri.addEventListener('click', () => openKasusWidgetDetail('santri'));
+  if (cardKasusKelasCount) cardKasusKelasCount.addEventListener('click', () => openKasusWidgetDetail('kelas_count'));
 
   // Enable cascade selects and filter based on selected Guru
   selGuru.addEventListener('change', updateMapel);

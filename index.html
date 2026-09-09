@@ -311,28 +311,32 @@
       <!-- Stat Cards Summary Rekap Absen -->
       <div class="row g-3 mb-3">
         <div class="col-6 col-md-3">
-          <div class="card border-0 shadow-sm rounded-4 p-3 bg-white text-center h-100 border-start border-4 border-primary">
+          <div class="card border-0 shadow-sm rounded-4 p-3 bg-white text-center h-100 border-start border-4 border-primary stat-clickable-card" id="card-rekap-santri" title="Klik untuk melihat rincian santri terdampak">
+            <span class="stat-card-badge-hint"><i class="bi bi-arrows-angle-expand"></i> Rincian</span>
             <div class="text-muted small fw-medium mb-1"><i class="bi bi-people-fill text-primary me-1"></i> Santri Terdampak</div>
             <div class="fs-4 fw-bold text-primary" id="rekap-stat-santri-count">0</div>
             <small class="text-muted" style="font-size: 11px;">Pernah Tidak Hadir</small>
           </div>
         </div>
         <div class="col-6 col-md-3">
-          <div class="card border-0 shadow-sm rounded-4 p-3 bg-white text-center h-100 border-start border-4 border-warning">
+          <div class="card border-0 shadow-sm rounded-4 p-3 bg-white text-center h-100 border-start border-4 border-warning stat-clickable-card" id="card-rekap-izin" title="Klik untuk melihat seluruh rincian kejadian Izin">
+            <span class="stat-card-badge-hint"><i class="bi bi-arrows-angle-expand"></i> Rincian</span>
             <div class="text-muted small fw-medium mb-1"><i class="bi bi-info-circle-fill text-warning me-1"></i> Total Izin</div>
             <div class="fs-4 fw-bold text-warning" id="rekap-stat-total-izin">0</div>
             <small class="text-muted" style="font-size: 11px;">Jam Pelajaran</small>
           </div>
         </div>
         <div class="col-6 col-md-3">
-          <div class="card border-0 shadow-sm rounded-4 p-3 bg-white text-center h-100 border-start border-4 border-info">
+          <div class="card border-0 shadow-sm rounded-4 p-3 bg-white text-center h-100 border-start border-4 border-info stat-clickable-card" id="card-rekap-sakit" title="Klik untuk melihat seluruh rincian kejadian Sakit">
+            <span class="stat-card-badge-hint"><i class="bi bi-arrows-angle-expand"></i> Rincian</span>
             <div class="text-muted small fw-medium mb-1"><i class="bi bi-heart-pulse-fill text-info me-1"></i> Total Sakit</div>
             <div class="fs-4 fw-bold text-info" id="rekap-stat-total-sakit">0</div>
             <small class="text-muted" style="font-size: 11px;">Jam Pelajaran</small>
           </div>
         </div>
         <div class="col-6 col-md-3">
-          <div class="card border-0 shadow-sm rounded-4 p-3 bg-white text-center h-100 border-start border-4 border-danger">
+          <div class="card border-0 shadow-sm rounded-4 p-3 bg-white text-center h-100 border-start border-4 border-danger stat-clickable-card" id="card-rekap-alfa" title="Klik untuk melihat seluruh rincian kejadian Alfa">
+            <span class="stat-card-badge-hint"><i class="bi bi-arrows-angle-expand"></i> Rincian</span>
             <div class="text-muted small fw-medium mb-1"><i class="bi bi-exclamation-octagon-fill text-danger me-1"></i> Total Alfa</div>
             <div class="fs-4 fw-bold text-danger" id="rekap-stat-total-alfa">0</div>
             <small class="text-muted" style="font-size: 11px;">Tanpa Keterangan</small>
@@ -474,28 +478,32 @@
       <!-- Stat Cards Summary Permasalahan -->
       <div class="row g-3 mb-3">
         <div class="col-6 col-md-3">
-          <div class="card border-0 shadow-sm rounded-4 p-3 bg-white text-center h-100 border-start border-4 border-warning">
+          <div class="card border-0 shadow-sm rounded-4 p-3 bg-white text-center h-100 border-start border-4 border-warning stat-clickable-card" id="card-kasus-total" title="Klik untuk melihat seluruh rincian kejadian KBM">
+            <span class="stat-card-badge-hint"><i class="bi bi-arrows-angle-expand"></i> Rincian</span>
             <div class="text-muted small fw-medium mb-1"><i class="bi bi-journal-text text-warning me-1"></i> Total Kejadian</div>
             <div class="fs-4 fw-bold text-dark" id="kasus-stat-total">0</div>
             <small class="text-muted" style="font-size: 11px;">Catatan Kejadian</small>
           </div>
         </div>
         <div class="col-6 col-md-3">
-          <div class="card border-0 shadow-sm rounded-4 p-3 bg-white text-center h-100 border-start border-4 border-primary">
+          <div class="card border-0 shadow-sm rounded-4 p-3 bg-white text-center h-100 border-start border-4 border-primary stat-clickable-card" id="card-kasus-kbm" title="Klik untuk melihat rincian Catatan Kelas & Kendala KBM">
+            <span class="stat-card-badge-hint"><i class="bi bi-arrows-angle-expand"></i> Rincian</span>
             <div class="text-muted small fw-medium mb-1"><i class="bi bi-chat-left-quote-fill text-primary me-1"></i> Catatan KBM</div>
             <div class="fs-4 fw-bold text-primary" id="kasus-stat-kelas">0</div>
             <small class="text-muted" style="font-size: 11px;">Kendala / Keterangan Kelas</small>
           </div>
         </div>
         <div class="col-6 col-md-3">
-          <div class="card border-0 shadow-sm rounded-4 p-3 bg-white text-center h-100 border-start border-4 border-danger">
+          <div class="card border-0 shadow-sm rounded-4 p-3 bg-white text-center h-100 border-start border-4 border-danger stat-clickable-card" id="card-kasus-santri" title="Klik untuk melihat rincian Kasus Adab & Santri Khusus">
+            <span class="stat-card-badge-hint"><i class="bi bi-arrows-angle-expand"></i> Rincian</span>
             <div class="text-muted small fw-medium mb-1"><i class="bi bi-person-exclamation text-danger me-1"></i> Kasus Santri</div>
             <div class="fs-4 fw-bold text-danger" id="kasus-stat-santri">0</div>
             <small class="text-muted" style="font-size: 11px;">Catatan Adab / Santri Khusus</small>
           </div>
         </div>
         <div class="col-6 col-md-3">
-          <div class="card border-0 shadow-sm rounded-4 p-3 bg-white text-center h-100 border-start border-4 border-secondary">
+          <div class="card border-0 shadow-sm rounded-4 p-3 bg-white text-center h-100 border-start border-4 border-secondary stat-clickable-card" id="card-kasus-kelas-count" title="Klik untuk melihat rekap perbandingan catatan antar kelas">
+            <span class="stat-card-badge-hint"><i class="bi bi-arrows-angle-expand"></i> Rincian</span>
             <div class="text-muted small fw-medium mb-1"><i class="bi bi-building text-secondary me-1"></i> Kelas Terpantau</div>
             <div class="fs-4 fw-bold text-secondary" id="kasus-stat-kelas-count">0</div>
             <small class="text-muted" style="font-size: 11px;">Kelas Memiliki Catatan</small>
@@ -1062,6 +1070,116 @@
     </div>
   </div>
 
+  <!-- Modal Detail Widget Rekap Ketidakhadiran (Santri Terdampak / Izin / Sakit / Alfa) -->
+  <div class="modal fade" id="modal-widget-detail-rekap" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
+      <div class="modal-content border-0 rounded-4 shadow-lg overflow-hidden">
+        <div class="modal-header border-0 py-3 px-4" id="modal-widget-rekap-header">
+          <div class="d-flex align-items-center gap-2">
+            <div class="bg-white rounded-3 p-2 d-flex align-items-center justify-content-center shadow-sm" id="modal-widget-rekap-icon-box" style="width: 38px; height: 38px;">
+              <i class="bi bi-people fs-5" id="modal-widget-rekap-icon"></i>
+            </div>
+            <div>
+              <h5 class="modal-title fw-bold" id="modal-widget-rekap-title">Rincian Detail Rekap</h5>
+              <p class="mb-0 small opacity-75" id="modal-widget-rekap-subtitle">Pelacakan rincian berdasarkan periode aktif</p>
+            </div>
+          </div>
+          <button type="button" class="btn-close" id="modal-widget-rekap-close-btn" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        
+        <!-- Controls Bar in Modal (Search, Filter Kelas, Summary Count) -->
+        <div class="px-4 py-2 bg-light border-bottom d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            <span class="badge bg-white text-dark border px-3 py-2 rounded-pill shadow-sm small" id="modal-widget-rekap-badge-count">
+              <i class="bi bi-list-check me-1 text-primary"></i> <span id="modal-widget-rekap-count-txt">0 Data</span>
+            </span>
+            <div class="d-flex align-items-center gap-1">
+              <span class="small text-muted fw-bold">Kelas:</span>
+              <select id="modal-widget-rekap-filter-kelas" class="form-select form-select-sm bg-white shadow-sm w-auto border-1">
+                <option value="Semua">Semua Kelas</option>
+              </select>
+            </div>
+          </div>
+          <div class="input-group input-group-sm" style="max-width: 250px;">
+            <span class="input-group-text bg-white border-1"><i class="bi bi-search text-muted"></i></span>
+            <input type="text" id="modal-widget-rekap-search" class="form-control bg-white border-1" placeholder="Cari santri / guru / mapel...">
+          </div>
+        </div>
+
+        <div class="modal-body p-4" id="modal-widget-rekap-body">
+          <!-- Diisi secara dinamis oleh JavaScript -->
+        </div>
+
+        <div class="modal-footer border-0 bg-light py-2 px-4 justify-content-between flex-wrap gap-2">
+          <div class="d-flex align-items-center gap-2">
+            <button type="button" class="btn btn-secondary btn-sm px-3 rounded-pill" data-bs-dismiss="modal">Tutup</button>
+            <button type="button" class="btn btn-outline-primary btn-sm px-3 rounded-pill fw-medium" id="btn-apply-rekap-widget-filter" title="Terapkan filter kategori ini ke tabel utama">
+              <i class="bi bi-funnel me-1"></i> Terapkan ke Tabel Utama
+            </button>
+          </div>
+          <button type="button" class="btn btn-primary btn-sm px-3 rounded-pill fw-bold shadow-sm" id="btn-print-rekap-widget-detail">
+            <i class="bi bi-printer me-1"></i> Cetak Rincian Ini
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Detail Widget Catatan Permasalahan (Total / KBM / Kasus Santri / Kelas) -->
+  <div class="modal fade" id="modal-widget-detail-kasus" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
+      <div class="modal-content border-0 rounded-4 shadow-lg overflow-hidden">
+        <div class="modal-header border-0 py-3 px-4" id="modal-widget-kasus-header">
+          <div class="d-flex align-items-center gap-2">
+            <div class="bg-white rounded-3 p-2 d-flex align-items-center justify-content-center shadow-sm" id="modal-widget-kasus-icon-box" style="width: 38px; height: 38px;">
+              <i class="bi bi-journal-text fs-5" id="modal-widget-kasus-icon"></i>
+            </div>
+            <div>
+              <h5 class="modal-title fw-bold" id="modal-widget-kasus-title">Rincian Catatan Permasalahan</h5>
+              <p class="mb-0 small opacity-75" id="modal-widget-kasus-subtitle">Detail catatan kejadian KBM dan adab santri</p>
+            </div>
+          </div>
+          <button type="button" class="btn-close" id="modal-widget-kasus-close-btn" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+
+        <!-- Controls Bar in Modal (Search, Filter Kelas, Summary Count) -->
+        <div class="px-4 py-2 bg-light border-bottom d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            <span class="badge bg-white text-dark border px-3 py-2 rounded-pill shadow-sm small" id="modal-widget-kasus-badge-count">
+              <i class="bi bi-list-check me-1 text-warning"></i> <span id="modal-widget-kasus-count-txt">0 Kejadian</span>
+            </span>
+            <div class="d-flex align-items-center gap-1">
+              <span class="small text-muted fw-bold">Kelas:</span>
+              <select id="modal-widget-kasus-filter-kelas" class="form-select form-select-sm bg-white shadow-sm w-auto border-1">
+                <option value="Semua">Semua Kelas</option>
+              </select>
+            </div>
+          </div>
+          <div class="input-group input-group-sm" style="max-width: 250px;">
+            <span class="input-group-text bg-white border-1"><i class="bi bi-search text-muted"></i></span>
+            <input type="text" id="modal-widget-kasus-search" class="form-control bg-white border-1" placeholder="Cari masalah / materi / guru...">
+          </div>
+        </div>
+
+        <div class="modal-body p-4" id="modal-widget-kasus-body">
+          <!-- Diisi secara dinamis oleh JavaScript -->
+        </div>
+
+        <div class="modal-footer border-0 bg-light py-2 px-4 justify-content-between flex-wrap gap-2">
+          <div class="d-flex align-items-center gap-2">
+            <button type="button" class="btn btn-secondary btn-sm px-3 rounded-pill" data-bs-dismiss="modal">Tutup</button>
+            <button type="button" class="btn btn-outline-warning text-dark btn-sm px-3 rounded-pill fw-medium" id="btn-apply-kasus-widget-filter" title="Terapkan filter ke tampilan utama">
+              <i class="bi bi-funnel me-1"></i> Terapkan ke Tampilan Utama
+            </button>
+          </div>
+          <button type="button" class="btn btn-primary btn-sm px-3 rounded-pill fw-bold shadow-sm" id="btn-print-kasus-widget-detail">
+            <i class="bi bi-printer me-1"></i> Cetak Laporan Ini
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Lock Screen Overlay KBM -->
   <div id="kbm-lock-overlay" class="kbm-lock-overlay d-none">
     <div class="lock-card shadow-lg animate-fade-in text-center p-4 p-md-5">
@@ -1263,11 +1381,11 @@
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  <script src="app.js?v=29"></script>
+  <script src="app.js?v=31"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function() {
-        navigator.serviceWorker.register('./sw.js?v=29').then(function(registration) {
+        navigator.serviceWorker.register('./sw.js?v=31').then(function(registration) {
           console.log('ServiceWorker registration successful with scope: ', registration.scope);
           registration.update();
         }, function(err) {
