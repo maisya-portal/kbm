@@ -703,12 +703,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (searchVal) {
       filtered = filtered.filter(d => 
-        (d.guru && d.guru.toLowerCase().includes(searchVal)) ||
-        (d.pelajaran && d.pelajaran.toLowerCase().includes(searchVal)) ||
-        (d.kelas && d.kelas.toLowerCase().includes(searchVal)) ||
-        (d.materi && d.materi.toLowerCase().includes(searchVal)) ||
-        (d.tanggal && d.tanggal.includes(searchVal)) ||
-        (d.hari && d.hari.toLowerCase().includes(searchVal))
+        String(d.guru ?? '').toLowerCase().includes(searchVal) ||
+        String(d.pelajaran ?? '').toLowerCase().includes(searchVal) ||
+        String(d.kelas ?? '').toLowerCase().includes(searchVal) ||
+        String(d.materi ?? '').toLowerCase().includes(searchVal) ||
+        String(d.catatan_kelas ?? '').toLowerCase().includes(searchVal) ||
+        String(d.tanggal ?? '').includes(searchVal) ||
+        String(d.hari ?? '').toLowerCase().includes(searchVal)
       );
     }
 
@@ -1343,7 +1344,7 @@ document.addEventListener('DOMContentLoaded', () => {
           pelajaran: logItem.pelajaran,
           guru: logItem.guru,
           status: isIzin ? 'Izin' : (isSakit ? 'Sakit' : 'Alfa'),
-          catatan: (s.catatan || logItem.catatan_kelas || '').trim() || '-'
+          catatan: String(s.catatan ?? logItem.catatan_kelas ?? '').trim() || '-'
         });
       });
     });
@@ -1380,24 +1381,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Filter Kelas
     if (kelasVal !== 'Semua') {
-      filtered = filtered.filter(item => String(item.kelas).toLowerCase().trim() === String(kelasVal).toLowerCase().trim());
+      filtered = filtered.filter(item => String(item.kelas ?? '').toLowerCase().trim() === String(kelasVal ?? '').toLowerCase().trim());
     }
 
     // Filter Search
     if (searchVal) {
       filtered = filtered.filter(item => 
-        item.nama.toLowerCase().includes(searchVal) ||
-        item.nis.toLowerCase().includes(searchVal) ||
-        item.kelas.toLowerCase().includes(searchVal)
+        String(item.nama ?? '').toLowerCase().includes(searchVal) ||
+        String(item.nis ?? '').toLowerCase().includes(searchVal) ||
+        String(item.kelas ?? '').toLowerCase().includes(searchVal)
       );
     }
 
     // Sorting (Urutan Tertinggi)
     filtered.sort((a, b) => {
       if (currentSortRekap.col === 'nama') {
-        return currentSortRekap.dir === 'asc' ? a.nama.localeCompare(b.nama) : b.nama.localeCompare(a.nama);
+        return currentSortRekap.dir === 'asc' ? String(a.nama ?? '').localeCompare(String(b.nama ?? '')) : String(b.nama ?? '').localeCompare(String(a.nama ?? ''));
       } else if (currentSortRekap.col === 'kelas') {
-        return currentSortRekap.dir === 'asc' ? a.kelas.localeCompare(b.kelas) : b.kelas.localeCompare(a.kelas);
+        return currentSortRekap.dir === 'asc' ? String(a.kelas ?? '').localeCompare(String(b.kelas ?? '')) : String(b.kelas ?? '').localeCompare(String(a.kelas ?? ''));
       } else if (currentSortRekap.col === 'izin') {
         return currentSortRekap.dir === 'asc' ? a.izin - b.izin : b.izin - a.izin;
       } else if (currentSortRekap.col === 'sakit') {
@@ -2117,33 +2118,70 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  function isValidCatatanText(val) {
+    if (val === null || val === undefined) return false;
+    const str = String(val).trim();
+    if (!str || str === '-' || str === '--') return false;
+    // Abaikan jika hanya angka murni (misal nilai 85, 8, 75 yang diketik di kolom catatan)
+    if (/^\d+([.,]\d+)?$/.test(str)) return false;
+    // Abaikan jika hanya berisi karakter replacement unicode / simbol tanpa huruf/angka
+    if (!/[a-zA-Z0-9\u0600-\u06FF]/.test(str)) return false;
+    return true;
+  }
+
+  function isCatatanPositifKondusif(val) {
+    if (!val) return false;
+    const lower = String(val).toLowerCase().trim();
+    const negativeKeywords = [
+      'tidur', 'ngantuk', 'kantuk', 'telat', 'terlambat', 'sakit', 'alfa', 'mangkir', 'kabur',
+      'berisik', 'rame', 'ramai', 'kacau', 'kurang', 'belum', 'tidak pakai', 'tidak hadir',
+      'molor', 'main', 'ngobrol', 'lemes', 'tumbang', 'pelanggaran', 'masalah', 'namun',
+      'tapi', 'tetapi', 'walaupun', 'meskipun', 'izin', 'ijin', 'baca buku', 'uks', 'masjid'
+    ];
+    for (let i = 0; i < negativeKeywords.length; i++) {
+      if (lower.includes(negativeKeywords[i])) return false;
+    }
+    const positiveKeywords = [
+      'alhamdulillah', 'kondusif', 'oondusif', 'aman', 'lancar', 'terkendali', 'tidak ada kendala', 'baik', 'hadir semua'
+    ];
+    for (let i = 0; i < positiveKeywords.length; i++) {
+      if (lower.includes(positiveKeywords[i])) return true;
+    }
+    return false;
+  }
+
+  let currentSortKasus = { col: 'tanggal', dir: 'desc' };
+
   function processAndRenderCatatanKasus() {
     const rawLogs = currentRawLogData || [];
     const events = [];
 
     rawLogs.forEach(logItem => {
-      if (!logItem.status_isi) return;
+      if (!logItem || !logItem.status_isi) return;
 
-      const catatanKelas = (logItem.catatan_kelas || '').trim();
-      const santriList = logItem.catatan_santri || (window.santriDetailsCache && window.santriDetailsCache[logItem.id_jurnal]) || [];
+      const rawCatatanKelas = String(logItem.catatan_kelas ?? '').trim();
+      const catatanKelas = isValidCatatanText(rawCatatanKelas) ? rawCatatanKelas : '';
+      const santriList = Array.isArray(logItem.catatan_santri) ? logItem.catatan_santri : ((window.santriDetailsCache && window.santriDetailsCache[logItem.id_jurnal]) || []);
 
       const santriCatatan = [];
       const santriAlfa = [];
 
       santriList.forEach(s => {
-        const st = String(s.status || '').toLowerCase().trim();
-        const cat = (s.catatan || '').trim();
+        if (!s) return;
+        const st = String(s.status ?? '').toLowerCase().trim();
+        const rawCat = String(s.catatan ?? '').trim();
+        const cat = isValidCatatanText(rawCat) ? rawCat : '';
         if (cat) {
           santriCatatan.push({
-            nama: s.nama || s.nis || 'Santri',
-            status: s.status || 'Hadir',
+            nama: String(s.nama || s.nis || 'Santri'),
+            status: String(s.status || 'Hadir'),
             catatan: cat
           });
         }
         if (st.includes('alfa')) {
           santriAlfa.push({
-            nama: s.nama || s.nis || 'Santri',
-            nis: s.nis || '-'
+            nama: String(s.nama || s.nis || 'Santri'),
+            nis: String(s.nis || '-')
           });
         }
       });
@@ -2151,29 +2189,32 @@ document.addEventListener('DOMContentLoaded', () => {
       const hasCatatanKelas = catatanKelas.length > 0;
       const hasSantriCatatan = santriCatatan.length > 0;
       const hasAlfa = santriAlfa.length > 0;
+      const isKondusif = hasCatatanKelas && !hasSantriCatatan && !hasAlfa && isCatatanPositifKondusif(catatanKelas);
 
       if (hasCatatanKelas || hasSantriCatatan || hasAlfa) {
         let tipe = 'Catatan Kejadian Kelas/KBM';
         if (hasSantriCatatan && hasCatatanKelas) tipe = 'KBM & Adab Santri';
         else if (hasSantriCatatan) tipe = 'Catatan Adab / Perilaku Santri';
         else if (hasAlfa && !hasCatatanKelas) tipe = 'Santri Alfa / Mangkir';
+        else if (isKondusif) tipe = 'Laporan Kelas Kondusif';
 
         events.push({
-          id_jurnal: logItem.id_jurnal,
-          tanggal: logItem.tanggal,
-          hari: logItem.hari,
-          waktu: logItem.waktu,
-          jam_ke: logItem.jam_ke,
-          kelas: logItem.kelas,
-          pelajaran: logItem.pelajaran,
-          guru: logItem.guru,
-          materi: logItem.materi,
+          id_jurnal: String(logItem.id_jurnal ?? ''),
+          tanggal: String(logItem.tanggal ?? ''),
+          hari: String(logItem.hari ?? ''),
+          waktu: String(logItem.waktu ?? ''),
+          jam_ke: String(logItem.jam_ke ?? ''),
+          kelas: String(logItem.kelas ?? ''),
+          pelajaran: String(logItem.pelajaran ?? ''),
+          guru: String(logItem.guru ?? ''),
+          materi: String(logItem.materi ?? ''),
           catatan_kelas: catatanKelas,
           santri_catatan: santriCatatan,
           santri_alfa: santriAlfa,
           hasCatatanKelas: hasCatatanKelas,
           hasSantriCatatan: hasSantriCatatan,
           hasAlfa: hasAlfa,
+          isKondusif: isKondusif,
           tipe: tipe
         });
       }
@@ -2187,31 +2228,54 @@ document.addEventListener('DOMContentLoaded', () => {
     const searchVal = filterSearchKasus ? filterSearchKasus.value.toLowerCase().trim() : '';
     const tipeVal = filterTipeKasus ? filterTipeKasus.value : 'Semua';
 
-    let filtered = currentKasusProcessedData;
+    let filtered = [...(currentKasusProcessedData || [])];
 
     // Filter Kelas
     if (currentSelectedKelasKasus !== 'Semua') {
-      filtered = filtered.filter(item => String(item.kelas).toLowerCase().trim() === String(currentSelectedKelasKasus).toLowerCase().trim());
+      filtered = filtered.filter(item => String(item.kelas ?? '').toLowerCase().trim() === String(currentSelectedKelasKasus ?? '').toLowerCase().trim());
     }
 
     // Filter Tipe Permasalahan
-    if (tipeVal === 'kelas') {
+    if (tipeVal === 'masalah_saja') {
+      filtered = filtered.filter(item => !item.isKondusif);
+    } else if (tipeVal === 'kelas') {
       filtered = filtered.filter(item => item.hasCatatanKelas);
     } else if (tipeVal === 'santri') {
       filtered = filtered.filter(item => item.hasSantriCatatan);
     } else if (tipeVal === 'alfa') {
       filtered = filtered.filter(item => item.hasAlfa);
+    } else if (tipeVal === 'kondusif') {
+      filtered = filtered.filter(item => item.isKondusif);
     }
 
     // Filter Search
     if (searchVal) {
       filtered = filtered.filter(item => {
-        const matchText = (item.catatan_kelas + ' ' + item.guru + ' ' + item.pelajaran + ' ' + item.materi + ' ' + item.kelas).toLowerCase();
-        const matchSantri = item.santri_catatan.some(s => (s.nama + ' ' + s.catatan).toLowerCase().includes(searchVal)) ||
-                            item.santri_alfa.some(s => s.nama.toLowerCase().includes(searchVal));
+        const matchText = (String(item.catatan_kelas ?? '') + ' ' + String(item.guru ?? '') + ' ' + String(item.pelajaran ?? '') + ' ' + String(item.materi ?? '') + ' ' + String(item.kelas ?? '')).toLowerCase();
+        const matchSantri = (item.santri_catatan || []).some(s => (String(s.nama ?? '') + ' ' + String(s.catatan ?? '')).toLowerCase().includes(searchVal)) ||
+                            (item.santri_alfa || []).some(s => String(s.nama ?? '').toLowerCase().includes(searchVal));
         return matchText.includes(searchVal) || matchSantri;
       });
     }
+
+    // Sorting Interaktif
+    filtered.sort((a, b) => {
+      const dir = currentSortKasus.dir === 'asc' ? 1 : -1;
+      const col = currentSortKasus.col;
+      if (col === 'kelas') {
+        return dir * String(a.kelas ?? '').localeCompare(String(b.kelas ?? ''), 'id', { numeric: true });
+      } else if (col === 'guru') {
+        return dir * (String(a.pelajaran ?? '') + ' ' + String(a.guru ?? '')).localeCompare(String(b.pelajaran ?? '') + ' ' + String(b.guru ?? ''), 'id');
+      } else if (col === 'tipe') {
+        return dir * String(a.tipe ?? '').localeCompare(String(b.tipe ?? ''), 'id');
+      } else if (col === 'deskripsi') {
+        return dir * String(a.catatan_kelas ?? '').localeCompare(String(b.catatan_kelas ?? ''), 'id');
+      } else {
+        const dtA = String(a.tanggal ?? '') + ' ' + String(a.waktu ?? '');
+        const dtB = String(b.tanggal ?? '') + ' ' + String(b.waktu ?? '');
+        return dir * dtA.localeCompare(dtB);
+      }
+    });
 
     updateKasusStats(filtered, currentKasusProcessedData);
     renderKasusFeed(filtered);
@@ -2264,10 +2328,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
       let catatanKelasHtml = '';
       if (item.hasCatatanKelas) {
+        const quoteBorder = item.isKondusif ? 'border-success' : 'border-warning';
+        const quoteIcon = item.isKondusif ? 'bi-check-circle-fill text-success' : 'bi-chat-left-text text-warning';
         catatanKelasHtml = `
           <div class="mb-3">
-            <span class="small fw-bold text-muted d-block mb-1"><i class="bi bi-chat-left-text text-warning me-1"></i>Catatan Pembelajaran / Kelas:</span>
-            <div class="kasus-quote-box border-warning">
+            <span class="small fw-bold text-muted d-block mb-1"><i class="bi ${quoteIcon} me-1"></i>Catatan Pembelajaran / Kelas:</span>
+            <div class="kasus-quote-box ${quoteBorder}">
               ${item.catatan_kelas}
             </div>
           </div>
@@ -2313,7 +2379,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <span class="badge bg-light text-dark border px-2 py-1"><i class="bi bi-calendar3 me-1 text-primary"></i>${item.hari || '-'}, ${formatDateIndo(item.tanggal)}</span>
             <span class="badge bg-light text-muted border px-2 py-1"><i class="bi bi-clock me-1"></i>${item.waktu || '-'} s/d ${item.jam_ke || '-'}</span>
           </div>
-          <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill px-3 py-1 small fw-semibold">
+          <span class="badge ${item.isKondusif ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-secondary-subtle text-secondary border border-secondary-subtle'} rounded-pill px-3 py-1 small fw-semibold">
             ${item.tipe}
           </span>
         </div>
@@ -2467,6 +2533,20 @@ document.addEventListener('DOMContentLoaded', () => {
   if (btnRefreshKasus) btnRefreshKasus.addEventListener('click', () => fetchCatatanKasus(true));
   if (btnPrintKasus) btnPrintKasus.addEventListener('click', printKasusReport);
 
+  // Interactive Column Sorting untuk Tabel Catatan Permasalahan
+  document.querySelectorAll('.th-sortable-kasus').forEach(th => {
+    th.addEventListener('click', () => {
+      const col = th.getAttribute('data-sort');
+      if (currentSortKasus.col === col) {
+        currentSortKasus.dir = (currentSortKasus.dir === 'asc') ? 'desc' : 'asc';
+      } else {
+        currentSortKasus.col = col;
+        currentSortKasus.dir = (col === 'tanggal') ? 'desc' : 'asc';
+      }
+      applyKasusFilters();
+    });
+  });
+
   // =========================================================================
   // INTERAKSI WIDGET STATISTIK CATATAN KASUS (Total / KBM / Kasus Santri / Kelas)
   // =========================================================================
@@ -2559,9 +2639,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (query) {
       data = data.filter(item => {
-        const text = (item.catatan_kelas + ' ' + item.guru + ' ' + item.pelajaran + ' ' + item.materi + ' ' + item.kelas).toLowerCase();
-        const matchSantri = (item.santri_catatan || []).some(s => (s.nama + ' ' + s.catatan).toLowerCase().includes(query)) ||
-                            (item.santri_alfa || []).some(s => s.nama.toLowerCase().includes(query));
+        const text = (String(item.catatan_kelas ?? '') + ' ' + String(item.guru ?? '') + ' ' + String(item.pelajaran ?? '') + ' ' + String(item.materi ?? '') + ' ' + String(item.kelas ?? '')).toLowerCase();
+        const matchSantri = (item.santri_catatan || []).some(s => (String(s.nama ?? '') + ' ' + String(s.catatan ?? '')).toLowerCase().includes(query)) ||
+                            (item.santri_alfa || []).some(s => String(s.nama ?? '').toLowerCase().includes(query));
         return text.includes(query) || matchSantri;
       });
     }
@@ -2570,7 +2650,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (currentKasusWidgetModalType === 'kelas_count') {
       const classMap = {};
       (currentKasusProcessedData || []).forEach(item => {
-        const kl = item.kelas || 'Lainnya';
+        const kl = String(item.kelas || 'Lainnya');
         if (!classMap[kl]) {
           classMap[kl] = { kelas: kl, total: 0, kbm: 0, santri: 0, alfa: 0, items: [] };
         }
@@ -2583,7 +2663,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       let classList = Object.values(classMap);
       if (query) {
-        classList = classList.filter(c => c.kelas.toLowerCase().includes(query));
+        classList = classList.filter(c => String(c.kelas ?? '').toLowerCase().includes(query));
       }
       classList.sort((a, b) => b.total - a.total);
 
@@ -2978,7 +3058,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const isClassMatch = (k1 === targetNormKelas || String(s.kelas) === String(selectedKelasName) || String(s.Kelas) === String(selectedKelasName));
       if (isClassMatch) {
         const nis = String(s.nis || s.NIS || s.id_santri || s.ID_Santri || '').trim();
-        const nama = (s.nama || s.Nama_Lengkap || s.Nama_Santri || s.Nama || '').trim();
+        const nama = String(s.nama || s.Nama_Lengkap || s.Nama_Santri || s.Nama || '').trim();
         const key = nis ? `NIS_${nis}` : `NAMA_${nama.toLowerCase()}`;
         if (key && !santriMap.has(key)) {
           santriMap.set(key, s);
@@ -2990,8 +3070,8 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Urutkan secara alfabetis berdasarkan nama santri
     generatedSantri.sort((a, b) => {
-      const nA = (a.Nama || a.Nama_Santri || a.Nama_Lengkap || a.nama || '').trim();
-      const nB = (b.Nama || b.Nama_Santri || b.Nama_Lengkap || b.nama || '').trim();
+      const nA = String(a.Nama || a.Nama_Santri || a.Nama_Lengkap || a.nama || '').trim();
+      const nB = String(b.Nama || b.Nama_Santri || b.Nama_Lengkap || b.nama || '').trim();
       return nA.localeCompare(nB, 'id', { sensitivity: 'base' });
     });
     
