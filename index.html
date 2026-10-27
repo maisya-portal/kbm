@@ -511,21 +511,99 @@
         </div>
       </div>
 
+      <!-- Baris Highlight: Rekap Santri Terbanyak, Guru Teraktif Mencatat Masalah & Guru Terbaik Kedisiplinan Presensi -->
+      <div class="row g-3 mb-3">
+        <!-- Highlight 1: Rekap Masalah Per Santri Terbanyak -->
+        <div class="col-12 col-lg-4">
+          <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100 border-top border-4 border-danger stat-clickable-card" id="card-kasus-top-santri" title="Klik untuk melihat Rekap Jumlah Total Masalah Per Santri">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <div class="d-flex align-items-center gap-2">
+                <div class="rounded-3 bg-danger-subtle text-danger d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                  <i class="bi bi-person-fill-exclamation fs-5"></i>
+                </div>
+                <div>
+                  <div class="fw-bold text-dark small">Rekap Masalah Per Santri</div>
+                  <div class="text-muted" style="font-size: 11px;">Urutan santri dengan catatan terbanyak</div>
+                </div>
+              </div>
+              <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2 py-1" style="font-size: 10px;">
+                <i class="bi bi-sort-numeric-down-alt me-1"></i>Lihat Rekap
+              </span>
+            </div>
+            <div id="kasus-highlight-top-santri-body" class="small mt-1">
+              <div class="text-muted small py-2 text-center">Memuat data rekap santri...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Highlight 2: Guru Terbanyak Mencatat Permasalahan Santri -->
+        <div class="col-12 col-md-6 col-lg-4">
+          <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100 border-top border-4 border-primary stat-clickable-card" id="card-kasus-top-guru-pencatat" title="Klik untuk melihat peringkat Guru Terbanyak Mencatat Permasalahan Santri">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <div class="d-flex align-items-center gap-2">
+                <div class="rounded-3 bg-primary-subtle text-primary d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                  <i class="bi bi-award-fill fs-5"></i>
+                </div>
+                <div>
+                  <div class="fw-bold text-dark small">Guru Teraktif Mencatat Masalah</div>
+                  <div class="text-muted" style="font-size: 11px;">Terbanyak mencatat masalah & adab santri</div>
+                </div>
+              </div>
+              <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2 py-1" style="font-size: 10px;">
+                <i class="bi bi-trophy-fill me-1"></i>Peringkat
+              </span>
+            </div>
+            <div id="kasus-highlight-guru-pencatat-body" class="small mt-1">
+              <div class="text-muted small py-2 text-center">Memuat data guru...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Highlight 3: Guru Terbaik dalam Kedisiplinan Presensi -->
+        <div class="col-12 col-md-6 col-lg-4">
+          <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100 border-top border-4 border-success stat-clickable-card" id="card-kasus-top-guru-disiplin" title="Klik untuk melihat peringkat Guru Terbaik dalam Kedisiplinan Presensi">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <div class="d-flex align-items-center gap-2">
+                <div class="rounded-3 bg-success-subtle text-success d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                  <i class="bi bi-patch-check-fill fs-5"></i>
+                </div>
+                <div>
+                  <div class="fw-bold text-dark small">Guru Terbaik Disiplin Presensi</div>
+                  <div class="text-muted" style="font-size: 11px;">Kehadiran & ketepatan waktu KBM tertinggi</div>
+                </div>
+              </div>
+              <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-1" style="font-size: 10px;">
+                <i class="bi bi-star-fill me-1"></i>Peringkat
+              </span>
+            </div>
+            <div id="kasus-highlight-guru-disiplin-body" class="small mt-1">
+              <div class="text-muted small py-2 text-center">Memuat data kedisiplinan...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
         <div class="card-header bg-white border-bottom py-3 d-flex flex-column gap-3">
-          <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
+          <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-2">
             <div>
               <h5 class="mb-0 fw-bold text-dark"><i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>Daftar Catatan Permasalahan & Kejadian KBM</h5>
-              <small class="text-muted">Pelacakan catatan kejadian kelas, kendala pembelajaran, dan catatan adab santri per kelas.</small>
+              <small class="text-muted">Pelacakan catatan kejadian kelas, kendala pembelajaran, rekap masalah per santri, dan evaluasi guru.</small>
             </div>
-            <div class="d-flex align-items-center gap-2">
-              <!-- Switch View: Feed Timeline vs Tabel -->
-              <div class="btn-group btn-group-sm shadow-sm rounded-pill p-1 bg-light border" role="group">
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+              <!-- Switch View: Feed Kartu vs Tabel vs Rekap Santri vs Rekap Guru -->
+              <div class="btn-group btn-group-sm shadow-sm rounded-pill p-1 bg-light border flex-wrap" role="group">
                 <button type="button" class="btn btn-sm btn-primary rounded-pill px-3 py-1 fw-medium" id="btn-view-feed" onclick="switchKasusView('feed')">
                   <i class="bi bi-view-stacked me-1"></i> Feed Kartu
                 </button>
                 <button type="button" class="btn btn-sm btn-light rounded-pill px-3 py-1 fw-medium" id="btn-view-table" onclick="switchKasusView('table')">
                   <i class="bi bi-table me-1"></i> Tabel
+                </button>
+                <button type="button" class="btn btn-sm btn-light rounded-pill px-3 py-1 fw-medium" id="btn-view-rekap-santri" onclick="switchKasusView('rekap_santri')">
+                  <i class="bi bi-person-lines-fill me-1 text-danger"></i> Rekap Santri
+                </button>
+                <button type="button" class="btn btn-sm btn-light rounded-pill px-3 py-1 fw-medium" id="btn-view-rekap-guru" onclick="switchKasusView('rekap_guru')">
+                  <i class="bi bi-award me-1 text-success"></i> Rekap Guru
                 </button>
               </div>
               <button id="btn-refresh-kasus" class="btn btn-sm btn-primary rounded-pill px-3 shadow-sm d-flex align-items-center gap-1" title="Muat Ulang Catatan">
@@ -616,18 +694,31 @@
                   <option value="kondusif">Laporan Kelas Kondusif</option>
                 </select>
               </div>
+
+              <!-- Filter Per Santri -->
+              <div class="d-flex align-items-center gap-1">
+                <span class="small text-muted fw-bold"><i class="bi bi-person-bounding-box me-1 text-danger"></i>Santri:</span>
+                <select id="filter-santri-kasus" class="form-select form-select-sm bg-white shadow-sm w-auto border-1" style="max-width: 260px;">
+                  <option value="Semua">Semua Santri (Tampilkan Semua)</option>
+                </select>
+              </div>
             </div>
 
             <div class="d-flex align-items-center gap-2">
               <div class="input-group input-group-sm" style="max-width: 220px;">
                 <span class="input-group-text bg-white border-1"><i class="bi bi-search text-muted"></i></span>
-                <input type="text" id="filter-search-kasus" class="form-control bg-white border-1" placeholder="Cari masalah/guru/materi...">
+                <input type="text" id="filter-search-kasus" class="form-control bg-white border-1" placeholder="Cari santri/masalah/guru...">
               </div>
             </div>
           </div>
+
+          <!-- Banner Ringkasan Masalah Santri Terpilih (Muncul saat filter santri aktif) -->
+          <div id="banner-selected-santri-kasus" class="d-none p-3 rounded-4 border border-danger-subtle bg-danger-subtle bg-opacity-25 shadow-sm">
+            <!-- Diisi otomatis via JS saat santri dipilih -->
+          </div>
         </div>
 
-        <!-- Konten Feed Kartu Kejadian -->
+        <!-- Konten 1: Feed Kartu Kejadian -->
         <div id="container-kasus-feed" class="p-3 bg-light-subtle">
           <div id="feed-kasus-list" class="d-flex flex-column gap-3">
             <div class="text-center py-5 text-muted">
@@ -636,7 +727,7 @@
           </div>
         </div>
 
-        <!-- Konten Tabel Kejadian (Alternatif) -->
+        <!-- Konten 2: Tabel Kejadian (Alternatif) -->
         <div id="container-kasus-table" class="table-responsive d-none">
           <table class="table table-hover align-middle mb-0" id="tabel-kasus">
             <thead class="table-light text-muted small">
@@ -658,6 +749,117 @@
               </tr>
             </tbody>
           </table>
+        </div>
+
+        <!-- Konten 3: Rekap Jumlah Total Masalah Per Santri -->
+        <div id="container-kasus-rekap-santri" class="d-none">
+          <div class="p-3 bg-white border-bottom d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
+            <div>
+              <h6 class="fw-bold text-dark mb-0"><i class="bi bi-person-lines-fill text-danger me-2"></i>Rekapitulasi Total Permasalahan Per Santri</h6>
+              <small class="text-muted">Klik nama santri atau tombol <b>Filter Riwayat</b> untuk menampilkan seluruh catatan masalah santri tersebut.</small>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              <span class="small text-muted fw-bold text-nowrap"><i class="bi bi-sort-down me-1 text-primary"></i>Urutkan:</span>
+              <select id="filter-sort-rekap-santri-kasus" class="form-select form-select-sm bg-light border-1 w-auto fw-semibold">
+                <option value="total" selected>Total Masalah Terbanyak</option>
+                <option value="adab">Catatan Adab Terbanyak</option>
+                <option value="alfa">Alfa / Mangkir Terbanyak</option>
+                <option value="mention">Disebut di Catatan Kelas Terbanyak</option>
+                <option value="nama">Nama Santri (A-Z)</option>
+              </select>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" id="tabel-rekap-santri-kasus">
+              <thead class="table-light text-muted small">
+                <tr>
+                  <th class="py-3 px-3 fw-medium border-bottom-0 text-center" style="width: 60px;">Peringkat</th>
+                  <th class="py-3 px-3 fw-medium border-bottom-0 th-sortable-rekap-santri-kasus" data-sort="nama" style="cursor: pointer;">Nama Santri <i class="bi bi-arrow-down-up ms-1 text-muted" style="font-size: 11px;"></i></th>
+                  <th class="py-3 px-3 fw-medium border-bottom-0 text-center th-sortable-rekap-santri-kasus" data-sort="kelas" style="width: 100px; cursor: pointer;">Kelas <i class="bi bi-arrow-down-up ms-1 text-muted" style="font-size: 11px;"></i></th>
+                  <th class="py-3 px-3 fw-medium border-bottom-0 text-center th-sortable-rekap-santri-kasus" data-sort="adab" style="width: 130px; cursor: pointer;">Catatan Adab <i class="bi bi-arrow-down-up ms-1 text-muted" style="font-size: 11px;"></i></th>
+                  <th class="py-3 px-3 fw-medium border-bottom-0 text-center th-sortable-rekap-santri-kasus" data-sort="alfa" style="width: 120px; cursor: pointer;">Alfa / Mangkir <i class="bi bi-arrow-down-up ms-1 text-muted" style="font-size: 11px;"></i></th>
+                  <th class="py-3 px-3 fw-medium border-bottom-0 text-center th-sortable-rekap-santri-kasus" data-sort="mention" style="width: 140px; cursor: pointer;">Catatan Kelas <i class="bi bi-arrow-down-up ms-1 text-muted" style="font-size: 11px;"></i></th>
+                  <th class="py-3 px-3 fw-medium border-bottom-0 text-center text-danger th-sortable-rekap-santri-kasus" data-sort="total" style="width: 130px; cursor: pointer;">Total Masalah <i class="bi bi-arrow-down-up ms-1" style="font-size: 11px;"></i></th>
+                  <th class="py-3 px-3 fw-medium border-bottom-0">Ringkasan Masalah Terakhir</th>
+                  <th class="py-3 px-3 fw-medium border-bottom-0 text-center" style="width: 160px;">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="body-rekap-santri-kasus">
+                <tr>
+                  <td colspan="9" class="text-center py-5 text-muted">Memuat rekap masalah per santri...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Konten 4: Rekap Guru Pencatat Masalah & Kedisiplinan Presensi Guru -->
+        <div id="container-kasus-rekap-guru" class="d-none p-3 bg-light-subtle">
+          <div class="row g-4">
+            <!-- Kolom Kiri: Guru Terbanyak Mencatat Permasalahan Santri -->
+            <div class="col-12 col-xl-6">
+              <div class="card border-0 shadow-sm rounded-4 overflow-hidden h-100">
+                <div class="card-header bg-primary text-white py-3 px-4 border-0">
+                  <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                      <h6 class="fw-bold mb-0"><i class="bi bi-award-fill me-2 text-warning"></i>Guru Terbanyak Mencatat Permasalahan Santri</h6>
+                      <small class="text-white text-opacity-75" style="font-size: 11px;">Peringkat keaktifan guru dalam mencatat adab santri & evaluasi kendala kelas</small>
+                    </div>
+                    <span class="badge bg-white text-primary rounded-pill px-3 py-1 fw-bold" id="badge-count-guru-pencatat">0 Guru</span>
+                  </div>
+                </div>
+                <div class="table-responsive">
+                  <table class="table table-hover align-middle mb-0 small">
+                    <thead class="table-light text-muted">
+                      <tr>
+                        <th class="py-2 px-3 text-center" style="width: 50px;">#</th>
+                        <th class="py-2 px-3">Nama Guru</th>
+                        <th class="py-2 px-2 text-center" title="Jumlah Catatan Masalah Individu Santri">Kasus Santri</th>
+                        <th class="py-2 px-2 text-center" title="Jumlah Catatan Kendala Kelas">Kendala Kelas</th>
+                        <th class="py-2 px-2 text-center" title="Jumlah Santri Alfa yang Dicatat">Alfa Dicatat</th>
+                        <th class="py-2 px-3 text-center text-primary fw-bold">Total Catatan</th>
+                      </tr>
+                    </thead>
+                    <tbody id="body-rekap-guru-pencatat">
+                      <tr><td colspan="6" class="text-center py-4 text-muted">Memuat data...</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- Kolom Kanan: Guru Terbaik dalam Kedisiplinan Presensi -->
+            <div class="col-12 col-xl-6">
+              <div class="card border-0 shadow-sm rounded-4 overflow-hidden h-100">
+                <div class="card-header bg-success text-white py-3 px-4 border-0">
+                  <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                      <h6 class="fw-bold mb-0"><i class="bi bi-patch-check-fill me-2 text-warning"></i>Guru Terbaik dalam Kedisiplinan Presensi</h6>
+                      <small class="text-white text-opacity-75" style="font-size: 11px;">Peringkat kepatuhan presensi, kelengkapan jurnal & ketepatan waktu masuk</small>
+                    </div>
+                    <span class="badge bg-white text-success rounded-pill px-3 py-1 fw-bold" id="badge-count-guru-disiplin">0 Guru</span>
+                  </div>
+                </div>
+                <div class="table-responsive">
+                  <table class="table table-hover align-middle mb-0 small">
+                    <thead class="table-light text-muted">
+                      <tr>
+                        <th class="py-2 px-3 text-center" style="width: 50px;">#</th>
+                        <th class="py-2 px-3">Nama Guru</th>
+                        <th class="py-2 px-2 text-center" title="Hadir dibanding Total Jadwal">Hadir / Jadwal</th>
+                        <th class="py-2 px-2 text-center" title="Jumlah Kehadiran Tepat Waktu">Tepat Waktu</th>
+                        <th class="py-2 px-2 text-center" title="Rata-rata Keterlambatan">Rata Telat</th>
+                        <th class="py-2 px-3 text-center text-success fw-bold">Skor Disiplin</th>
+                      </tr>
+                    </thead>
+                    <tbody id="body-rekap-guru-disiplin">
+                      <tr><td colspan="6" class="text-center py-4 text-muted">Memuat data...</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
       </div>
@@ -1383,11 +1585,11 @@
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  <script src="app.js?v=32"></script>
+  <script src="app.js?v=33"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function() {
-        navigator.serviceWorker.register('./sw.js?v=32').then(function(registration) {
+        navigator.serviceWorker.register('./sw.js?v=33').then(function(registration) {
           console.log('ServiceWorker registration successful with scope: ', registration.scope);
           registration.update();
         }, function(err) {

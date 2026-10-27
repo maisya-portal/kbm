@@ -440,15 +440,25 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnApplyRangeKasus = document.getElementById('btn-apply-range-kasus');
   const kasusQuickKelasPills = document.getElementById('kasus-quick-kelas-pills');
   const filterTipeKasus = document.getElementById('filter-tipe-kasus');
+  const filterSantriKasus = document.getElementById('filter-santri-kasus');
+  const bannerSelectedSantriKasus = document.getElementById('banner-selected-santri-kasus');
   const filterSearchKasus = document.getElementById('filter-search-kasus');
   const btnRefreshKasus = document.getElementById('btn-refresh-kasus');
   const btnPrintKasus = document.getElementById('btn-print-kasus');
   const btnViewFeed = document.getElementById('btn-view-feed');
   const btnViewTable = document.getElementById('btn-view-table');
+  const btnViewRekapSantri = document.getElementById('btn-view-rekap-santri');
+  const btnViewRekapGuru = document.getElementById('btn-view-rekap-guru');
   const containerKasusFeed = document.getElementById('container-kasus-feed');
   const containerKasusTable = document.getElementById('container-kasus-table');
+  const containerKasusRekapSantri = document.getElementById('container-kasus-rekap-santri');
+  const containerKasusRekapGuru = document.getElementById('container-kasus-rekap-guru');
   const feedKasusList = document.getElementById('feed-kasus-list');
   const tbodyKasusTable = document.getElementById('body-kasus-table');
+  const tbodyRekapSantriKasus = document.getElementById('body-rekap-santri-kasus');
+  const filterSortRekapSantriKasus = document.getElementById('filter-sort-rekap-santri-kasus');
+  const tbodyRekapGuruPencatat = document.getElementById('body-rekap-guru-pencatat');
+  const tbodyRekapGuruDisiplin = document.getElementById('body-rekap-guru-disiplin');
 
   let currentRawLogData = [];
   let currentRekapProcessedData = [];
@@ -456,8 +466,13 @@ document.addEventListener('DOMContentLoaded', () => {
   window.rekapSantriRecordsCache = {};
 
   let currentKasusProcessedData = [];
+  let currentKasusSantriRekapList = [];
+  let currentKasusGuruPencatatList = [];
+  let currentKasusGuruDisiplinList = [];
   let currentSelectedKelasKasus = 'Semua';
+  let currentSelectedSantriKasus = 'Semua';
   let currentKasusViewMode = 'feed';
+  let currentSortRekapSantriKasus = { col: 'total', dir: 'desc' };
 
   // Set default date to today on load
   const todayDateStr = new Date().toISOString().split('T')[0];
@@ -2152,36 +2167,102 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let currentSortKasus = { col: 'tanggal', dir: 'desc' };
 
+  function getSantriKeyKasus(s, fallbackKelas) {
+    if (!s) return '';
+    const nis = String(s.nis || s.id_santri || '').trim();
+    const nama = String(s.nama || '').trim();
+    const kls = String(s.kelas || fallbackKelas || '').trim();
+    if (nis && nis !== '-' && nis !== 'undefined' && nis !== 'null') return nis;
+    return (nama + '__' + kls).toUpperCase();
+  }
+
+  function extractDistinctSantriTokens(nama) {
+    if (!nama) return [];
+    const stopWords = new Set([
+      'muhammad', 'mukhammad', 'muhamad', 'mohammad', 'mohamad', 'mochammad', 'mochamad',
+      'ahmad', 'achmad', 'abdul', 'abdullah', 'abdurrahman', 'bin', 'binti', 'putra', 'putri',
+      'santri', 'kelas', 'tidur', 'sakit', 'izin', 'ijin', 'alfa', 'hadir', 'semua', 'baik',
+      'pakai', 'seragam', 'tidak', 'dan', 'yang', 'dari', 'untuk', 'dalam', 'pada', 'masih',
+      'kurang', 'belum', 'sudah', 'anak', 'ustadz', 'guru', 'mapel', 'pelajaran'
+    ]);
+    return String(nama)
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, ' ')
+      .split(/\s+/)
+      .filter(w => w.length >= 3 && !stopWords.has(w));
+  }
+
   function processAndRenderCatatanKasus() {
     const rawLogs = currentRawLogData || [];
     const events = [];
 
+    // Bangun daftar santri per kelas dari master allSantri & dari log untuk pencocokan nama di catatan_kelas
+    const classSantriRoster = {};
+    const registerRosterSantri = (s, kls) => {
+      if (!s) return;
+      const kelasName = String(s.kelas || kls || '').trim();
+      if (!kelasName) return;
+      const nama = String(s.nama || '').trim();
+      if (!nama || nama === '-') return;
+      const nis = String(s.nis || s.id_santri || '-').trim();
+      const key = getSantriKeyKasus({ nis, nama, kelas: kelasName }, kelasName);
+      if (!classSantriRoster[kelasName]) classSantriRoster[kelasName] = new Map();
+      if (!classSantriRoster[kelasName].has(key)) {
+        classSantriRoster[kelasName].set(key, {
+          key,
+          nis,
+          nama,
+          kelas: kelasName,
+          tokens: extractDistinctSantriTokens(nama)
+        });
+      }
+    };
+
+    (allSantri || []).forEach(s => registerRosterSantri(s, s.kelas));
+    rawLogs.forEach(logItem => {
+      if (!logItem) return;
+      const sList = Array.isArray(logItem.catatan_santri) ? logItem.catatan_santri : [];
+      sList.forEach(s => registerRosterSantri(s, logItem.kelas));
+    });
+
     rawLogs.forEach(logItem => {
       if (!logItem || !logItem.status_isi) return;
 
+      const kelasStr = String(logItem.kelas ?? '').trim();
       const rawCatatanKelas = String(logItem.catatan_kelas ?? '').trim();
       const catatanKelas = isValidCatatanText(rawCatatanKelas) ? rawCatatanKelas : '';
       const santriList = Array.isArray(logItem.catatan_santri) ? logItem.catatan_santri : ((window.santriDetailsCache && window.santriDetailsCache[logItem.id_jurnal]) || []);
 
       const santriCatatan = [];
       const santriAlfa = [];
+      const recordedCatatanKeys = new Set();
 
       santriList.forEach(s => {
         if (!s) return;
         const st = String(s.status ?? '').toLowerCase().trim();
         const rawCat = String(s.catatan ?? '').trim();
         const cat = isValidCatatanText(rawCat) ? rawCat : '';
+        const nama = String(s.nama || s.nis || 'Santri').trim();
+        const nis = String(s.nis || s.id_santri || '-').trim();
+        const key = getSantriKeyKasus({ nis, nama, kelas: kelasStr }, kelasStr);
+
         if (cat) {
+          recordedCatatanKeys.add(key);
           santriCatatan.push({
-            nama: String(s.nama || s.nis || 'Santri'),
+            key,
+            nis,
+            nama,
+            kelas: kelasStr,
             status: String(s.status || 'Hadir'),
             catatan: cat
           });
         }
         if (st.includes('alfa')) {
           santriAlfa.push({
-            nama: String(s.nama || s.nis || 'Santri'),
-            nis: String(s.nis || '-')
+            key,
+            nis,
+            nama,
+            kelas: kelasStr
           });
         }
       });
@@ -2191,9 +2272,44 @@ document.addEventListener('DOMContentLoaded', () => {
       const hasAlfa = santriAlfa.length > 0;
       const isKondusif = hasCatatanKelas && !hasSantriCatatan && !hasAlfa && isCatatanPositifKondusif(catatanKelas);
 
+      // Deteksi santri yang namanya disebut langsung di dalam catatan_kelas (yang bukan laporan kondusif)
+      const santriMentioned = [];
+      if (hasCatatanKelas && !isKondusif && classSantriRoster[kelasStr]) {
+        const rosterList = Array.from(classSantriRoster[kelasStr].values());
+        // Hitung frekuensi token di kelas tersebut agar token yang unik lebih diprioritaskan
+        const tokenFreq = {};
+        rosterList.forEach(st => {
+          (st.tokens || []).forEach(tk => {
+            tokenFreq[tk] = (tokenFreq[tk] || 0) + 1;
+          });
+        });
+
+        const lowerCatKelas = catatanKelas.toLowerCase();
+        rosterList.forEach(st => {
+          if (recordedCatatanKeys.has(st.key)) return;
+          const matchedToken = (st.tokens || []).find(tk => {
+            // Jika token dimiliki > 2 santri di kelas yang sama, lewati kecuali nama lengkap cocok
+            if (tokenFreq[tk] > 2) return false;
+            const regex = new RegExp(`(^|[^a-z0-9])${tk}([^a-z0-9]|$)`, 'i');
+            return regex.test(lowerCatKelas);
+          });
+          if (matchedToken) {
+            santriMentioned.push({
+              key: st.key,
+              nis: st.nis,
+              nama: st.nama,
+              kelas: kelasStr,
+              catatan: catatanKelas
+            });
+          }
+        });
+      }
+
+      const hasSantriMentioned = santriMentioned.length > 0;
+
       if (hasCatatanKelas || hasSantriCatatan || hasAlfa) {
         let tipe = 'Catatan Kejadian Kelas/KBM';
-        if (hasSantriCatatan && hasCatatanKelas) tipe = 'KBM & Adab Santri';
+        if ((hasSantriCatatan || hasSantriMentioned) && hasCatatanKelas) tipe = 'KBM & Adab Santri';
         else if (hasSantriCatatan) tipe = 'Catatan Adab / Perilaku Santri';
         else if (hasAlfa && !hasCatatanKelas) tipe = 'Santri Alfa / Mangkir';
         else if (isKondusif) tipe = 'Laporan Kelas Kondusif';
@@ -2204,15 +2320,17 @@ document.addEventListener('DOMContentLoaded', () => {
           hari: String(logItem.hari ?? ''),
           waktu: String(logItem.waktu ?? ''),
           jam_ke: String(logItem.jam_ke ?? ''),
-          kelas: String(logItem.kelas ?? ''),
+          kelas: kelasStr,
           pelajaran: String(logItem.pelajaran ?? ''),
           guru: String(logItem.guru ?? ''),
           materi: String(logItem.materi ?? ''),
           catatan_kelas: catatanKelas,
           santri_catatan: santriCatatan,
           santri_alfa: santriAlfa,
+          santri_mentioned: santriMentioned,
           hasCatatanKelas: hasCatatanKelas,
           hasSantriCatatan: hasSantriCatatan,
+          hasSantriMentioned: hasSantriMentioned,
           hasAlfa: hasAlfa,
           isKondusif: isKondusif,
           tipe: tipe
@@ -2224,9 +2342,298 @@ document.addEventListener('DOMContentLoaded', () => {
     applyKasusFilters();
   }
 
+  function computeKasusAnalyticsByActiveClass() {
+    const rawLogs = currentRawLogData || [];
+    const allEvents = currentKasusProcessedData || [];
+
+    const eventsByClass = currentSelectedKelasKasus === 'Semua'
+      ? allEvents
+      : allEvents.filter(item => String(item.kelas ?? '').toLowerCase().trim() === String(currentSelectedKelasKasus ?? '').toLowerCase().trim());
+
+    const rawLogsByClass = currentSelectedKelasKasus === 'Semua'
+      ? rawLogs
+      : rawLogs.filter(item => String(item.kelas ?? '').toLowerCase().trim() === String(currentSelectedKelasKasus ?? '').toLowerCase().trim());
+
+    // 1. Rekapitulasi Masalah Per Santri
+    const santriMap = new Map();
+    const ensureSantriEntry = (sObj, fallbackKelas) => {
+      const key = sObj.key || getSantriKeyKasus(sObj, fallbackKelas);
+      if (!key) return null;
+      if (!santriMap.has(key)) {
+        santriMap.set(key, {
+          key,
+          nis: String(sObj.nis && sObj.nis !== '-' ? sObj.nis : '-'),
+          nama: String(sObj.nama || 'Santri'),
+          kelas: String(sObj.kelas || fallbackKelas || '-'),
+          adabCount: 0,
+          alfaCount: 0,
+          mentionCount: 0,
+          totalMasalah: 0,
+          records: []
+        });
+      }
+      return santriMap.get(key);
+    };
+
+    eventsByClass.forEach(item => {
+      (item.santri_catatan || []).forEach(sc => {
+        const entry = ensureSantriEntry(sc, item.kelas);
+        if (!entry) return;
+        entry.adabCount++;
+        entry.totalMasalah++;
+        entry.records.push({
+          tanggal: item.tanggal,
+          hari: item.hari,
+          waktu: item.waktu,
+          kelas: item.kelas,
+          pelajaran: item.pelajaran,
+          guru: item.guru,
+          kategori: 'Catatan Adab / Perilaku',
+          badgeClass: 'bg-danger',
+          keterangan: sc.catatan
+        });
+      });
+
+      (item.santri_alfa || []).forEach(sa => {
+        const entry = ensureSantriEntry(sa, item.kelas);
+        if (!entry) return;
+        entry.alfaCount++;
+        entry.totalMasalah++;
+        entry.records.push({
+          tanggal: item.tanggal,
+          hari: item.hari,
+          waktu: item.waktu,
+          kelas: item.kelas,
+          pelajaran: item.pelajaran,
+          guru: item.guru,
+          kategori: 'Alfa / Mangkir',
+          badgeClass: 'bg-warning text-dark',
+          keterangan: 'Tidak hadir tanpa keterangan (Alfa)'
+        });
+      });
+
+      (item.santri_mentioned || []).forEach(sm => {
+        const entry = ensureSantriEntry(sm, item.kelas);
+        if (!entry) return;
+        entry.mentionCount++;
+        entry.totalMasalah++;
+        entry.records.push({
+          tanggal: item.tanggal,
+          hari: item.hari,
+          waktu: item.waktu,
+          kelas: item.kelas,
+          pelajaran: item.pelajaran,
+          guru: item.guru,
+          kategori: 'Catatan Kelas / KBM',
+          badgeClass: 'bg-info text-dark',
+          keterangan: sm.catatan
+        });
+      });
+    });
+
+    const santriRekapList = Array.from(santriMap.values()).filter(s => s.totalMasalah > 0);
+    santriRekapList.forEach(s => {
+      s.records.sort((a, b) => String(b.tanggal).localeCompare(String(a.tanggal)));
+    });
+    santriRekapList.sort((a, b) => {
+      if (b.totalMasalah !== a.totalMasalah) return b.totalMasalah - a.totalMasalah;
+      if (b.adabCount !== a.adabCount) return b.adabCount - a.adabCount;
+      if (b.alfaCount !== a.alfaCount) return b.alfaCount - a.alfaCount;
+      return String(a.nama).localeCompare(String(b.nama), 'id');
+    });
+    currentKasusSantriRekapList = santriRekapList;
+
+    // Populate Dropdown Filter Santri (#filter-santri-kasus)
+    if (filterSantriKasus) {
+      const prevSelected = currentSelectedSantriKasus || 'Semua';
+      let htmlOpts = `<option value="Semua">-- Semua Santri (${santriRekapList.length} Santri Tercatat Masalah) --</option>`;
+      if (santriRekapList.length > 0) {
+        htmlOpts += `<optgroup label="Santri Memiliki Catatan Masalah (Terbanyak - Terkecil)">`;
+        santriRekapList.forEach(s => {
+          const rincian = [];
+          if (s.adabCount > 0) rincian.push(`${s.adabCount} Adab`);
+          if (s.mentionCount > 0) rincian.push(`${s.mentionCount} KBM`);
+          if (s.alfaCount > 0) rincian.push(`${s.alfaCount} Alfa`);
+          htmlOpts += `<option value="${s.key}">${s.nama} (${s.kelas}) — ${s.totalMasalah} Masalah [${rincian.join(', ')}]</option>`;
+        });
+        htmlOpts += `</optgroup>`;
+      }
+
+      // Tambahkan santri tanpa masalah dari master allSantri (sesuai filter kelas) agar tetap bisa dicek jika dicari
+      const zeroSantri = [];
+      (allSantri || []).forEach(st => {
+        if (!st || !st.nama) return;
+        const kls = String(st.kelas || '').trim();
+        if (currentSelectedKelasKasus !== 'Semua' && kls.toLowerCase() !== String(currentSelectedKelasKasus).toLowerCase().trim()) return;
+        const key = getSantriKeyKasus(st, kls);
+        if (!santriMap.has(key)) {
+          zeroSantri.push({ key, nama: String(st.nama).trim(), kelas: kls });
+        }
+      });
+      if (zeroSantri.length > 0) {
+        zeroSantri.sort((a, b) => a.nama.localeCompare(b.nama, 'id'));
+        htmlOpts += `<optgroup label="Santri Tanpa Catatan Masalah (0 Masalah)">`;
+        zeroSantri.forEach(s => {
+          htmlOpts += `<option value="${s.key}">${s.nama} (${s.kelas}) — 0 Masalah</option>`;
+        });
+        htmlOpts += `</optgroup>`;
+      }
+
+      filterSantriKasus.innerHTML = htmlOpts;
+      const optionExists = Array.from(filterSantriKasus.options).some(opt => opt.value === prevSelected);
+      currentSelectedSantriKasus = optionExists ? prevSelected : 'Semua';
+      filterSantriKasus.value = currentSelectedSantriKasus;
+    }
+
+    // 2. Rekapitulasi Guru Terbanyak Mencatat Permasalahan Santri & KBM
+    const guruKasusMap = new Map();
+    const ensureGuruKasus = (guruName) => {
+      const g = String(guruName || '').trim();
+      if (!g || g === '-') return null;
+      if (!guruKasusMap.has(g)) {
+        guruKasusMap.set(g, {
+          guru: g,
+          kasusSantriCount: 0,
+          kendalaKelasCount: 0,
+          kondusifCount: 0,
+          alfaDicatatCount: 0,
+          totalCatatanMasalah: 0,
+          totalSemuaCatatan: 0,
+          totalJurnalIsi: 0,
+          kelasSet: new Set(),
+          mapelSet: new Set(),
+          records: []
+        });
+      }
+      return guruKasusMap.get(g);
+    };
+
+    rawLogsByClass.forEach(logItem => {
+      if (!logItem || !logItem.status_isi) return;
+      const entry = ensureGuruKasus(logItem.guru);
+      if (!entry) return;
+      entry.totalJurnalIsi++;
+      if (logItem.kelas) entry.kelasSet.add(logItem.kelas);
+      if (logItem.pelajaran) entry.mapelSet.add(logItem.pelajaran);
+    });
+
+    eventsByClass.forEach(item => {
+      const entry = ensureGuruKasus(item.guru);
+      if (!entry) return;
+      if (item.kelas) entry.kelasSet.add(item.kelas);
+      if (item.pelajaran) entry.mapelSet.add(item.pelajaran);
+
+      const sCatCount = (item.santri_catatan ? item.santri_catatan.length : 0) + (item.santri_mentioned ? item.santri_mentioned.length : 0);
+      const sAlfaCount = item.santri_alfa ? item.santri_alfa.length : 0;
+      const kbmProblem = (item.hasCatatanKelas && !item.isKondusif) ? 1 : 0;
+      const kbmKondusif = item.isKondusif ? 1 : 0;
+
+      entry.kasusSantriCount += sCatCount;
+      entry.alfaDicatatCount += sAlfaCount;
+      entry.kendalaKelasCount += kbmProblem;
+      entry.kondusifCount += kbmKondusif;
+      entry.totalCatatanMasalah += (sCatCount + kbmProblem);
+      entry.totalSemuaCatatan += (sCatCount + kbmProblem + sAlfaCount);
+
+      if (sCatCount > 0 || kbmProblem > 0 || sAlfaCount > 0) {
+        entry.records.push(item);
+      }
+    });
+
+    const guruPencatatList = Array.from(guruKasusMap.values())
+      .filter(g => g.totalCatatanMasalah > 0 || g.alfaDicatatCount > 0);
+    guruPencatatList.sort((a, b) => {
+      if (b.totalCatatanMasalah !== a.totalCatatanMasalah) return b.totalCatatanMasalah - a.totalCatatanMasalah;
+      if (b.kasusSantriCount !== a.kasusSantriCount) return b.kasusSantriCount - a.kasusSantriCount;
+      if (b.kendalaKelasCount !== a.kendalaKelasCount) return b.kendalaKelasCount - a.kendalaKelasCount;
+      if (b.alfaDicatatCount !== a.alfaDicatatCount) return b.alfaDicatatCount - a.alfaDicatatCount;
+      return b.totalJurnalIsi - a.totalJurnalIsi;
+    });
+    currentKasusGuruPencatatList = guruPencatatList;
+
+    // 3. Rekapitulasi Guru Terbaik dalam Kedisiplinan Presensi
+    const guruDisiplinMap = new Map();
+    rawLogsByClass.forEach(logItem => {
+      if (!logItem) return;
+      const g = String(logItem.guru || '').trim();
+      if (!g || g === '-') return;
+      if (!guruDisiplinMap.has(g)) {
+        guruDisiplinMap.set(g, {
+          guru: g,
+          totalJadwal: 0,
+          hadirCount: 0,
+          jurnalIsiCount: 0,
+          tepatWaktuCount: 0,
+          terlambatCount: 0,
+          totalLateMins: 0,
+          clockOutCount: 0,
+          izinSakitCount: 0,
+          kelasSet: new Set(),
+          mapelSet: new Set()
+        });
+      }
+      const st = guruDisiplinMap.get(g);
+      st.totalJadwal++;
+      if (logItem.kelas) st.kelasSet.add(logItem.kelas);
+      if (logItem.pelajaran) st.mapelSet.add(logItem.pelajaran);
+
+      const isHadir = Boolean(logItem.status_isi || logItem.status_guru === 'Hadir');
+      if (isHadir) {
+        st.hadirCount++;
+        if (logItem.status_isi) st.jurnalIsiCount++;
+        const lateMins = Number(logItem.late_mins || 0);
+        if (lateMins > 0) {
+          st.terlambatCount++;
+          st.totalLateMins += lateMins;
+        } else {
+          st.tepatWaktuCount++;
+        }
+        if (logItem.jam_ke && logItem.jam_ke !== '-') {
+          st.clockOutCount++;
+        }
+      } else if (logItem.status_guru === 'Izin' || logItem.status_guru === 'Sakit') {
+        st.izinSakitCount++;
+      }
+    });
+
+    const guruDisiplinList = Array.from(guruDisiplinMap.values())
+      .filter(g => g.hadirCount > 0)
+      .map(g => {
+        const persenHadir = g.totalJadwal > 0 ? Math.round((g.hadirCount / g.totalJadwal) * 100) : 0;
+        const persenJurnal = g.totalJadwal > 0 ? Math.round((g.jurnalIsiCount / g.totalJadwal) * 100) : 0;
+        const persenTepatWaktu = g.hadirCount > 0 ? Math.round((g.tepatWaktuCount / g.hadirCount) * 100) : 0;
+        const avgLateMins = g.terlambatCount > 0 ? Math.round(g.totalLateMins / g.terlambatCount) : 0;
+        // Skor disiplin gabungan: 50% kepatuhan isi jurnal/presensi + 40% ketepatan waktu + 10% rasio hadir
+        const skorDisiplin = Math.min(100, Math.round((persenJurnal * 0.50) + (persenTepatWaktu * 0.40) + (persenHadir * 0.10)));
+        return {
+          ...g,
+          persenHadir,
+          persenJurnal,
+          persenTepatWaktu,
+          avgLateMins,
+          skorDisiplin
+        };
+      });
+
+    guruDisiplinList.sort((a, b) => {
+      // Utamakan skor disiplin & jumlah sesi tepat waktu (dengan bobot aktivitas riil agar guru yang rajin presensi banyak sesi lebih unggul)
+      const effectiveA = a.skorDisiplin + Math.min(15, a.tepatWaktuCount * 0.8) - (a.terlambatCount * 1.5);
+      const effectiveB = b.skorDisiplin + Math.min(15, b.tepatWaktuCount * 0.8) - (b.terlambatCount * 1.5);
+      if (Math.abs(effectiveB - effectiveA) > 0.1) return effectiveB - effectiveA;
+      if (b.tepatWaktuCount !== a.tepatWaktuCount) return b.tepatWaktuCount - a.tepatWaktuCount;
+      if (b.skorDisiplin !== a.skorDisiplin) return b.skorDisiplin - a.skorDisiplin;
+      return a.avgLateMins - b.avgLateMins;
+    });
+    currentKasusGuruDisiplinList = guruDisiplinList;
+  }
+
   function applyKasusFilters() {
+    computeKasusAnalyticsByActiveClass();
+
     const searchVal = filterSearchKasus ? filterSearchKasus.value.toLowerCase().trim() : '';
     const tipeVal = filterTipeKasus ? filterTipeKasus.value : 'Semua';
+    const selectedSantriKey = filterSantriKasus ? filterSantriKasus.value : 'Semua';
+    currentSelectedSantriKasus = selectedSantriKey;
 
     let filtered = [...(currentKasusProcessedData || [])];
 
@@ -2235,13 +2642,23 @@ document.addEventListener('DOMContentLoaded', () => {
       filtered = filtered.filter(item => String(item.kelas ?? '').toLowerCase().trim() === String(currentSelectedKelasKasus ?? '').toLowerCase().trim());
     }
 
+    // Filter Per Santri
+    if (selectedSantriKey && selectedSantriKey !== 'Semua') {
+      filtered = filtered.filter(item => {
+        const matchCat = (item.santri_catatan || []).some(s => s.key === selectedSantriKey);
+        const matchAlfa = (item.santri_alfa || []).some(s => s.key === selectedSantriKey);
+        const matchMention = (item.santri_mentioned || []).some(s => s.key === selectedSantriKey);
+        return matchCat || matchAlfa || matchMention;
+      });
+    }
+
     // Filter Tipe Permasalahan
     if (tipeVal === 'masalah_saja') {
       filtered = filtered.filter(item => !item.isKondusif);
     } else if (tipeVal === 'kelas') {
       filtered = filtered.filter(item => item.hasCatatanKelas);
     } else if (tipeVal === 'santri') {
-      filtered = filtered.filter(item => item.hasSantriCatatan);
+      filtered = filtered.filter(item => item.hasSantriCatatan || item.hasSantriMentioned);
     } else if (tipeVal === 'alfa') {
       filtered = filtered.filter(item => item.hasAlfa);
     } else if (tipeVal === 'kondusif') {
@@ -2253,7 +2670,8 @@ document.addEventListener('DOMContentLoaded', () => {
       filtered = filtered.filter(item => {
         const matchText = (String(item.catatan_kelas ?? '') + ' ' + String(item.guru ?? '') + ' ' + String(item.pelajaran ?? '') + ' ' + String(item.materi ?? '') + ' ' + String(item.kelas ?? '')).toLowerCase();
         const matchSantri = (item.santri_catatan || []).some(s => (String(s.nama ?? '') + ' ' + String(s.catatan ?? '')).toLowerCase().includes(searchVal)) ||
-                            (item.santri_alfa || []).some(s => String(s.nama ?? '').toLowerCase().includes(searchVal));
+                            (item.santri_alfa || []).some(s => String(s.nama ?? '').toLowerCase().includes(searchVal)) ||
+                            (item.santri_mentioned || []).some(s => String(s.nama ?? '').toLowerCase().includes(searchVal));
         return matchText.includes(searchVal) || matchSantri;
       });
     }
@@ -2278,8 +2696,341 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     updateKasusStats(filtered, currentKasusProcessedData);
+    renderSelectedSantriKasusBanner(selectedSantriKey);
+    renderKasusHighlightCards();
     renderKasusFeed(filtered);
     renderKasusTable(filtered);
+    renderRekapSantriKasusTable();
+    renderRekapGuruKasusTables();
+  }
+
+  window.selectSantriKasusFilter = function(santriKey) {
+    if (!santriKey) return;
+    currentSelectedSantriKasus = santriKey;
+    if (filterSantriKasus) {
+      filterSantriKasus.value = santriKey;
+    }
+    if (currentKasusViewMode === 'rekap_santri' || currentKasusViewMode === 'rekap_guru') {
+      window.switchKasusView('feed');
+    }
+    applyKasusFilters();
+    if (bannerSelectedSantriKasus) {
+      bannerSelectedSantriKasus.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  };
+
+  window.resetSantriKasusFilter = function() {
+    currentSelectedSantriKasus = 'Semua';
+    if (filterSantriKasus) filterSantriKasus.value = 'Semua';
+    applyKasusFilters();
+  };
+
+  function renderSelectedSantriKasusBanner(selectedKey) {
+    if (!bannerSelectedSantriKasus) return;
+    if (!selectedKey || selectedKey === 'Semua') {
+      bannerSelectedSantriKasus.classList.add('d-none');
+      bannerSelectedSantriKasus.innerHTML = '';
+      return;
+    }
+
+    let info = (currentKasusSantriRekapList || []).find(s => s.key === selectedKey);
+    if (!info) {
+      const fromMaster = (allSantri || []).find(s => getSantriKeyKasus(s, s.kelas) === selectedKey);
+      info = {
+        key: selectedKey,
+        nis: fromMaster ? String(fromMaster.nis || '-') : '-',
+        nama: fromMaster ? String(fromMaster.nama || selectedKey) : selectedKey,
+        kelas: fromMaster ? String(fromMaster.kelas || '-') : '-',
+        adabCount: 0,
+        alfaCount: 0,
+        mentionCount: 0,
+        totalMasalah: 0,
+        records: []
+      };
+    }
+
+    bannerSelectedSantriKasus.classList.remove('d-none');
+    bannerSelectedSantriKasus.innerHTML = `
+      <div class="p-3 rounded-4 border shadow-sm" style="background: linear-gradient(135deg, #fff1f2 0%, #fff7ed 100%); border-color: #fecdd3 !important;">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+          <div class="d-flex align-items-center gap-3">
+            <div class="bg-danger text-white rounded-circle d-flex align-items-center justify-content-center fw-bold shadow-sm flex-shrink-0" style="width: 48px; height: 48px; font-size: 1.2rem;">
+              <i class="bi bi-person-lines-fill"></i>
+            </div>
+            <div>
+              <div class="d-flex align-items-center gap-2 flex-wrap">
+                <h6 class="fw-bold text-dark mb-0 fs-5">${info.nama}</h6>
+                <span class="badge bg-primary rounded-pill px-2 py-1">Kelas ${info.kelas}</span>
+                ${info.nis && info.nis !== '-' ? `<span class="badge bg-white text-muted border font-monospace">NIS: ${info.nis}</span>` : ''}
+              </div>
+              <div class="small text-muted mt-1">
+                Menampilkan khusus riwayat permasalahan santri terpilih pada periode aktif.
+              </div>
+            </div>
+          </div>
+
+          <div class="d-flex flex-wrap align-items-center gap-2 w-100 w-md-auto justify-content-md-end">
+            <div class="px-3 py-2 rounded-3 bg-white border border-danger-subtle text-center shadow-sm">
+              <div class="text-muted fw-bold" style="font-size: 10px; text-transform: uppercase;">Total Masalah</div>
+              <div class="fw-extrabold text-danger fs-5">${info.totalMasalah} <span class="small fw-normal">Kasus</span></div>
+            </div>
+            <div class="px-2 py-2 rounded-3 bg-white border text-center">
+              <div class="text-muted" style="font-size: 10px;">Catatan Adab</div>
+              <div class="fw-bold text-danger">${info.adabCount}</div>
+            </div>
+            <div class="px-2 py-2 rounded-3 bg-white border text-center">
+              <div class="text-muted" style="font-size: 10px;">Catatan Kelas</div>
+              <div class="fw-bold text-info">${info.mentionCount}</div>
+            </div>
+            <div class="px-2 py-2 rounded-3 bg-white border text-center">
+              <div class="text-muted" style="font-size: 10px;">Alfa / Mangkir</div>
+              <div class="fw-bold text-warning text-dark">${info.alfaCount}</div>
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3 py-2 fw-bold shadow-sm" onclick="window.resetSantriKasusFilter()">
+              <i class="bi bi-x-circle me-1"></i> Reset Filter Santri
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderKasusHighlightCards() {
+    // 1. Top Santri Bermasalah
+    const elTopSantri = document.getElementById('kasus-highlight-top-santri-body');
+    if (elTopSantri) {
+      const topSantri = (currentKasusSantriRekapList || []).slice(0, 3);
+      if (topSantri.length === 0) {
+        elTopSantri.innerHTML = `<div class="text-muted small py-1"><i class="bi bi-check-circle-fill text-success me-1"></i>Tidak ada santri tercatat bermasalah pada periode ini.</div>`;
+      } else {
+        const first = topSantri[0];
+        const others = topSantri.slice(1).map((s, idx) =>
+          `<span class="badge bg-white text-dark border rounded-pill px-2 py-1 me-1 mb-1" style="font-size: 11px;">#${idx + 2} ${s.nama} (${s.kelas}): <b class="text-danger">${s.totalMasalah}</b></span>`
+        ).join('');
+        elTopSantri.innerHTML = `
+          <div class="d-flex justify-content-between align-items-center">
+            <div class="text-truncate pe-2">
+              <div class="fw-extrabold text-dark text-truncate" style="font-size: 1rem;" title="${first.nama}">#1 ${first.nama}</div>
+              <div class="small text-muted">Kelas <b>${first.kelas}</b> • ${first.adabCount} Adab, ${first.mentionCount} KBM, ${first.alfaCount} Alfa</div>
+            </div>
+            <span class="badge bg-danger rounded-pill px-3 py-2 fw-bold fs-6 shadow-sm flex-shrink-0">${first.totalMasalah} Masalah</span>
+          </div>
+          ${others ? `<div class="mt-2 pt-1 border-top border-danger-subtle d-flex flex-wrap">${others}</div>` : ''}
+        `;
+      }
+    }
+
+    // 2. Top Guru Pencatat Masalah
+    const elTopGuruPencatat = document.getElementById('kasus-highlight-guru-pencatat-body');
+    if (elTopGuruPencatat) {
+      const topGuru = (currentKasusGuruPencatatList || []).slice(0, 3);
+      if (topGuru.length === 0) {
+        elTopGuruPencatat.innerHTML = `<div class="text-muted small py-1">Belum ada catatan permasalahan dari guru pada periode ini.</div>`;
+      } else {
+        const first = topGuru[0];
+        const others = topGuru.slice(1).map((g, idx) =>
+          `<span class="badge bg-white text-dark border rounded-pill px-2 py-1 me-1 mb-1" style="font-size: 11px;">#${idx + 2} ${g.guru}: <b class="text-primary">${g.totalCatatanMasalah}</b></span>`
+        ).join('');
+        elTopGuruPencatat.innerHTML = `
+          <div class="d-flex justify-content-between align-items-center">
+            <div class="text-truncate pe-2">
+              <div class="fw-extrabold text-dark text-truncate" style="font-size: 1rem;" title="${first.guru}">#1 ${first.guru}</div>
+              <div class="small text-muted">${first.kasusSantriCount} Kasus Santri • ${first.kendalaKelasCount} Kendala KBM • ${first.alfaDicatatCount} Alfa</div>
+            </div>
+            <span class="badge bg-primary rounded-pill px-3 py-2 fw-bold fs-6 shadow-sm flex-shrink-0">${first.totalCatatanMasalah} Catatan</span>
+          </div>
+          ${others ? `<div class="mt-2 pt-1 border-top border-primary-subtle d-flex flex-wrap">${others}</div>` : ''}
+        `;
+      }
+    }
+
+    // 3. Top Guru Terbaik Disiplin Presensi
+    const elTopGuruDisiplin = document.getElementById('kasus-highlight-guru-disiplin-body');
+    if (elTopGuruDisiplin) {
+      const topDisiplin = (currentKasusGuruDisiplinList || []).slice(0, 3);
+      if (topDisiplin.length === 0) {
+        elTopGuruDisiplin.innerHTML = `<div class="text-muted small py-1">Belum ada data presensi KBM guru pada periode ini.</div>`;
+      } else {
+        const first = topDisiplin[0];
+        const others = topDisiplin.slice(1).map((g, idx) =>
+          `<span class="badge bg-white text-dark border rounded-pill px-2 py-1 me-1 mb-1" style="font-size: 11px;">#${idx + 2} ${g.guru}: <b class="text-success">${g.skorDisiplin}%</b> (${g.tepatWaktuCount}/${g.hadirCount} tepat)</span>`
+        ).join('');
+        elTopGuruDisiplin.innerHTML = `
+          <div class="d-flex justify-content-between align-items-center">
+            <div class="text-truncate pe-2">
+              <div class="fw-extrabold text-dark text-truncate" style="font-size: 1rem;" title="${first.guru}">#1 ${first.guru}</div>
+              <div class="small text-muted">Hadir <b>${first.hadirCount}/${first.totalJadwal}</b> Sesi • <b>${first.tepatWaktuCount}</b> Tepat Waktu (${first.persenTepatWaktu}%)</div>
+            </div>
+            <span class="badge bg-success rounded-pill px-3 py-2 fw-bold fs-6 shadow-sm flex-shrink-0">Skor ${first.skorDisiplin}%</span>
+          </div>
+          ${others ? `<div class="mt-2 pt-1 border-top border-success-subtle d-flex flex-wrap">${others}</div>` : ''}
+        `;
+      }
+    }
+  }
+
+  function renderRekapSantriKasusTable() {
+    if (!tbodyRekapSantriKasus) return;
+    const searchVal = filterSearchKasus ? filterSearchKasus.value.toLowerCase().trim() : '';
+    const sortMode = filterSortRekapSantriKasus ? filterSortRekapSantriKasus.value : 'total_desc';
+
+    let list = [...(currentKasusSantriRekapList || [])];
+    if (currentSelectedSantriKasus && currentSelectedSantriKasus !== 'Semua') {
+      list = list.filter(s => s.key === currentSelectedSantriKasus);
+    }
+    if (searchVal) {
+      list = list.filter(s => {
+        const hay = (s.nama + ' ' + s.nis + ' ' + s.kelas + ' ' + s.records.map(r => r.keterangan + ' ' + r.pelajaran + ' ' + r.guru).join(' ')).toLowerCase();
+        return hay.includes(searchVal);
+      });
+    }
+
+    list.sort((a, b) => {
+      if (sortMode === 'total_asc') return a.totalMasalah - b.totalMasalah || a.nama.localeCompare(b.nama, 'id');
+      if (sortMode === 'adab_desc') return (b.adabCount + b.mentionCount) - (a.adabCount + a.mentionCount) || b.totalMasalah - a.totalMasalah;
+      if (sortMode === 'alfa_desc') return b.alfaCount - a.alfaCount || b.totalMasalah - a.totalMasalah;
+      if (sortMode === 'nama_asc') return a.nama.localeCompare(b.nama, 'id');
+      if (sortMode === 'kelas_asc') return a.kelas.localeCompare(b.kelas, 'id', { numeric: true }) || b.totalMasalah - a.totalMasalah;
+      return b.totalMasalah - a.totalMasalah || (b.adabCount + b.mentionCount) - (a.adabCount + a.mentionCount) || a.nama.localeCompare(b.nama, 'id');
+    });
+
+    if (list.length === 0) {
+      tbodyRekapSantriKasus.innerHTML = `<tr><td colspan="9" class="text-center py-5 text-muted"><i class="bi bi-shield-check fs-2 text-success d-block mb-2"></i>Tidak ada santri dengan catatan permasalahan pada filter ini.</td></tr>`;
+      return;
+    }
+
+    tbodyRekapSantriKasus.innerHTML = list.map((s, idx) => {
+      const rankBadge = idx === 0
+        ? `<span class="badge bg-danger rounded-pill px-2 py-1">#1</span>`
+        : idx === 1
+        ? `<span class="badge bg-warning text-dark rounded-pill px-2 py-1">#2</span>`
+        : idx === 2
+        ? `<span class="badge bg-info text-dark rounded-pill px-2 py-1">#3</span>`
+        : `<span class="text-muted fw-semibold">${idx + 1}</span>`;
+
+      const summaryPills = s.records.slice(0, 3).map(r =>
+        `<div class="small mb-1 text-truncate" style="max-width: 340px;" title="${formatDateIndo(r.tanggal)} - ${r.pelajaran} (${r.guru}): ${r.keterangan}">
+          <span class="badge ${r.badgeClass} rounded-pill me-1" style="font-size: 10px;">${r.kategori}</span>
+          <span class="text-dark fw-medium">${r.keterangan}</span>
+          <span class="text-muted" style="font-size: 11px;">(${formatDateIndo(r.tanggal)} • ${r.pelajaran})</span>
+        </div>`
+      ).join('');
+      const moreCount = s.records.length > 3 ? `<div class="small text-primary fw-semibold">+${s.records.length - 3} catatan lainnya...</div>` : '';
+
+      return `
+        <tr>
+          <td class="text-center">${rankBadge}</td>
+          <td>
+            <div class="fw-bold text-dark">${s.nama}</div>
+            ${s.nis && s.nis !== '-' ? `<small class="text-muted font-monospace" style="font-size: 11px;">NIS: ${s.nis}</small>` : ''}
+          </td>
+          <td class="text-center"><span class="badge bg-primary rounded-pill px-2 py-1">${s.kelas}</span></td>
+          <td class="text-center">${s.adabCount > 0 ? `<span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2 py-1 fw-bold">${s.adabCount}</span>` : '<span class="text-muted">-</span>'}</td>
+          <td class="text-center">${s.mentionCount > 0 ? `<span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill px-2 py-1 fw-bold">${s.mentionCount}</span>` : '<span class="text-muted">-</span>'}</td>
+          <td class="text-center">${s.alfaCount > 0 ? `<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-2 py-1 fw-bold">${s.alfaCount}</span>` : '<span class="text-muted">-</span>'}</td>
+          <td class="text-center">
+            <span class="badge bg-danger rounded-pill px-3 py-1 fw-bold fs-6 shadow-sm">${s.totalMasalah} Masalah</span>
+          </td>
+          <td>
+            ${summaryPills}
+            ${moreCount}
+          </td>
+          <td class="text-center text-nowrap">
+            <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3 py-1 fw-semibold" onclick="window.selectSantriKasusFilter('${s.key.replace(/'/g, "\\'")}')">
+              <i class="bi bi-funnel-fill me-1"></i> Filter Santri
+            </button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  function renderRekapGuruKasusTables() {
+    // Tabel 1: Guru Terbanyak Mencatat Masalah
+    const badgePencatat = document.getElementById('badge-count-guru-pencatat');
+    if (badgePencatat) badgePencatat.innerText = `${(currentKasusGuruPencatatList || []).length} Guru`;
+
+    if (tbodyRekapGuruPencatat) {
+      const list = currentKasusGuruPencatatList || [];
+      if (list.length === 0) {
+        tbodyRekapGuruPencatat.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-muted">Belum ada catatan permasalahan yang diinput oleh guru pada filter ini.</td></tr>`;
+      } else {
+        tbodyRekapGuruPencatat.innerHTML = list.map((g, idx) => {
+          const rankBadge = idx === 0
+            ? `<span class="badge bg-primary rounded-pill">#1</span>`
+            : idx === 1
+            ? `<span class="badge bg-info text-dark rounded-pill">#2</span>`
+            : idx === 2
+            ? `<span class="badge bg-secondary rounded-pill">#3</span>`
+            : `<span class="text-muted fw-semibold">${idx + 1}</span>`;
+          const mapelStr = Array.from(g.mapelSet || []).slice(0, 2).join(', ');
+          const kelasStr = Array.from(g.kelasSet || []).sort().join(', ');
+          return `
+            <tr>
+              <td class="text-center">${rankBadge}</td>
+              <td>
+                <div class="fw-bold text-dark">${g.guru}</div>
+                <small class="text-muted d-block" style="font-size: 11px;">Mapel: ${mapelStr || '-'} | Kelas: ${kelasStr || '-'} (${g.totalJurnalIsi} Jurnal)</small>
+              </td>
+              <td class="text-center">${g.kasusSantriCount > 0 ? `<span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2 py-1 fw-bold">${g.kasusSantriCount}</span>` : '<span class="text-muted">0</span>'}</td>
+              <td class="text-center">${g.kendalaKelasCount > 0 ? `<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-2 py-1 fw-bold">${g.kendalaKelasCount}</span>` : '<span class="text-muted">0</span>'}</td>
+              <td class="text-center">${g.alfaDicatatCount > 0 ? `<span class="badge bg-secondary-subtle text-secondary border rounded-pill px-2 py-1">${g.alfaDicatatCount}</span>` : '<span class="text-muted">0</span>'}</td>
+              <td class="text-center">
+                <span class="badge bg-primary rounded-pill px-3 py-1 fw-bold">${g.totalCatatanMasalah} Catatan</span>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      }
+    }
+
+    // Tabel 2: Guru Terbaik Kedisiplinan Presensi
+    const badgeDisiplin = document.getElementById('badge-count-guru-disiplin');
+    if (badgeDisiplin) badgeDisiplin.innerText = `${(currentKasusGuruDisiplinList || []).length} Guru`;
+
+    if (tbodyRekapGuruDisiplin) {
+      const list = currentKasusGuruDisiplinList || [];
+      if (list.length === 0) {
+        tbodyRekapGuruDisiplin.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-muted">Belum ada data kehadiran guru pada filter ini.</td></tr>`;
+      } else {
+        tbodyRekapGuruDisiplin.innerHTML = list.map((g, idx) => {
+          const rankBadge = idx === 0
+            ? `<span class="badge bg-success rounded-pill">#1</span>`
+            : idx === 1
+            ? `<span class="badge bg-teal bg-info text-dark rounded-pill">#2</span>`
+            : idx === 2
+            ? `<span class="badge bg-primary-subtle text-primary rounded-pill">#3</span>`
+            : `<span class="text-muted fw-semibold">${idx + 1}</span>`;
+          const mapelStr = Array.from(g.mapelSet || []).slice(0, 2).join(', ');
+          const scoreBadgeClass = g.skorDisiplin >= 90 ? 'bg-success' : g.skorDisiplin >= 75 ? 'bg-primary' : 'bg-warning text-dark';
+          return `
+            <tr>
+              <td class="text-center">${rankBadge}</td>
+              <td>
+                <div class="fw-bold text-dark">${g.guru}</div>
+                <small class="text-muted d-block" style="font-size: 11px;">${mapelStr || '-'} • Jurnal Terisi: <b>${g.jurnalIsiCount}/${g.totalJadwal}</b> (${g.persenJurnal}%)</small>
+              </td>
+              <td class="text-center">
+                <span class="fw-bold text-dark">${g.hadirCount}</span><span class="text-muted small">/${g.totalJadwal}</span>
+                <div class="text-muted" style="font-size: 10px;">${g.persenHadir}% Hadir</div>
+              </td>
+              <td class="text-center">
+                <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-1 fw-bold">${g.tepatWaktuCount} Sesi</span>
+                <div class="text-muted" style="font-size: 10px;">${g.persenTepatWaktu}% Tepat</div>
+              </td>
+              <td class="text-center">
+                ${g.terlambatCount > 0
+                  ? `<span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2 py-1">${g.terlambatCount}x (~${g.avgLateMins}m)</span>`
+                  : `<span class="badge bg-light text-success border rounded-pill px-2 py-1">0 Telat</span>`}
+              </td>
+              <td class="text-center">
+                <span class="badge ${scoreBadgeClass} rounded-pill px-3 py-1 fw-bold">${g.skorDisiplin}%</span>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      }
+    }
   }
 
   function updateKasusStats(filtered, allEvents) {
@@ -2294,7 +3045,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     filtered.forEach(item => {
       if (item.hasCatatanKelas) totalKelasCatatan++;
-      if (item.hasSantriCatatan || item.hasAlfa) totalSantriCatatan += (item.santri_catatan.length + item.santri_alfa.length);
+      if (item.hasSantriCatatan || item.hasAlfa || item.hasSantriMentioned) {
+        totalSantriCatatan += ((item.santri_catatan ? item.santri_catatan.length : 0) + (item.santri_alfa ? item.santri_alfa.length : 0) + (item.santri_mentioned ? item.santri_mentioned.length : 0));
+      }
       if (item.kelas) distinctClasses.add(item.kelas);
     });
 
@@ -2321,7 +3074,7 @@ document.addEventListener('DOMContentLoaded', () => {
     data.forEach(item => {
       const card = document.createElement('div');
       let borderClass = 'border-catatan-kelas';
-      if (item.hasSantriCatatan) borderClass = 'border-catatan-santri';
+      if (item.hasSantriCatatan || item.hasSantriMentioned) borderClass = 'border-catatan-santri';
       else if (item.hasAlfa && !item.hasCatatanKelas) borderClass = 'border-catatan-alfa';
 
       card.className = `card border-0 shadow-sm rounded-4 p-3 p-md-4 bg-white kasus-card ${borderClass}`;
@@ -2343,15 +3096,15 @@ document.addEventListener('DOMContentLoaded', () => {
       let santriCatatanHtml = '';
       if (item.santri_catatan && item.santri_catatan.length > 0) {
         const listBadges = item.santri_catatan.map(s => `
-          <div class="santri-badge-tag mb-1">
+          <div class="santri-badge-tag mb-1" style="cursor: pointer;" title="Klik untuk memfilter khusus santri ini" onclick="window.selectSantriKasusFilter('${(s.key || '').replace(/'/g, "\\'")}')">
             <i class="bi bi-person-exclamation text-danger"></i>
-            <span class="fw-bold">${s.nama}</span>: <span class="text-dark">${s.catatan}</span>
+            <span class="fw-bold text-decoration-underline">${s.nama}</span>: <span class="text-dark">${s.catatan}</span>
           </div>
         `).join(' ');
 
         santriCatatanHtml = `
           <div class="mb-2">
-            <span class="small fw-bold text-muted d-block mb-1"><i class="bi bi-exclamation-circle text-danger me-1"></i>Catatan Adab / Perilaku Santri:</span>
+            <span class="small fw-bold text-muted d-block mb-1"><i class="bi bi-exclamation-circle text-danger me-1"></i>Catatan Adab / Perilaku Santri (Klik nama untuk filter):</span>
             <div class="d-flex flex-wrap gap-1">
               ${listBadges}
             </div>
@@ -2359,9 +3112,26 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
       }
 
+      let santriMentionedHtml = '';
+      if (item.santri_mentioned && item.santri_mentioned.length > 0) {
+        const mentionBadges = item.santri_mentioned.map(s => `
+          <span class="badge bg-info-subtle text-dark border border-info-subtle rounded-pill px-2 py-1" style="cursor: pointer;" title="Klik untuk memfilter semua catatan ${s.nama}" onclick="window.selectSantriKasusFilter('${(s.key || '').replace(/'/g, "\\'")}')">
+            <i class="bi bi-person-bounding-box text-info me-1"></i>${s.nama}
+          </span>
+        `).join(' ');
+        santriMentionedHtml = `
+          <div class="mb-2">
+            <span class="small fw-bold text-muted d-block mb-1"><i class="bi bi-tag-fill text-info me-1"></i>Santri Terdeteksi di Catatan Kelas:</span>
+            <div class="d-flex flex-wrap gap-1">
+              ${mentionBadges}
+            </div>
+          </div>
+        `;
+      }
+
       let santriAlfaHtml = '';
       if (item.santri_alfa && item.santri_alfa.length > 0) {
-        const names = item.santri_alfa.map(s => `<span class="badge bg-danger rounded-pill px-2 py-1">${s.nama}</span>`).join(' ');
+        const names = item.santri_alfa.map(s => `<span class="badge bg-danger rounded-pill px-2 py-1" style="cursor: pointer;" title="Klik untuk memfilter santri ini" onclick="window.selectSantriKasusFilter('${(s.key || '').replace(/'/g, "\\'")}')">${s.nama}</span>`).join(' ');
         santriAlfaHtml = `
           <div class="mt-2">
             <span class="small fw-bold text-muted d-block mb-1"><i class="bi bi-person-x-fill text-danger me-1"></i>Santri Tidak Hadir (Alfa):</span>
@@ -2402,6 +3172,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         ${catatanKelasHtml}
         ${santriCatatanHtml}
+        ${santriMentionedHtml}
         ${santriAlfaHtml}
       `;
 
@@ -2423,10 +3194,13 @@ document.addEventListener('DOMContentLoaded', () => {
       let deskripsi = item.catatan_kelas || '-';
       let santriDetail = [];
       if (item.santri_catatan && item.santri_catatan.length > 0) {
-        santriDetail.push(...item.santri_catatan.map(s => `<span class="badge bg-danger-subtle text-danger border border-danger-subtle">${s.nama}: ${s.catatan}</span>`));
+        santriDetail.push(...item.santri_catatan.map(s => `<span class="badge bg-danger-subtle text-danger border border-danger-subtle" style="cursor:pointer;" onclick="window.selectSantriKasusFilter('${(s.key || '').replace(/'/g, "\\'")}')">${s.nama}: ${s.catatan}</span>`));
+      }
+      if (item.santri_mentioned && item.santri_mentioned.length > 0) {
+        santriDetail.push(...item.santri_mentioned.map(s => `<span class="badge bg-info-subtle text-dark border border-info-subtle" style="cursor:pointer;" onclick="window.selectSantriKasusFilter('${(s.key || '').replace(/'/g, "\\'")}')">KBM: ${s.nama}</span>`));
       }
       if (item.santri_alfa && item.santri_alfa.length > 0) {
-        santriDetail.push(...item.santri_alfa.map(s => `<span class="badge bg-danger">Alfa: ${s.nama}</span>`));
+        santriDetail.push(...item.santri_alfa.map(s => `<span class="badge bg-danger" style="cursor:pointer;" onclick="window.selectSantriKasusFilter('${(s.key || '').replace(/'/g, "\\'")}')">Alfa: ${s.nama}</span>`));
       }
 
       tr.innerHTML = `
@@ -2461,23 +3235,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
   window.switchKasusView = function(mode) {
     currentKasusViewMode = mode;
-    if (btnViewFeed && btnViewTable) {
-      if (mode === 'feed') {
-        btnViewFeed.classList.remove('btn-light');
-        btnViewFeed.classList.add('btn-primary');
-        btnViewTable.classList.remove('btn-primary');
-        btnViewTable.classList.add('btn-light');
-        if (containerKasusFeed) containerKasusFeed.classList.remove('d-none');
-        if (containerKasusTable) containerKasusTable.classList.add('d-none');
+    const allBtns = [
+      { el: btnViewFeed, key: 'feed' },
+      { el: btnViewTable, key: 'table' },
+      { el: btnViewRekapSantri, key: 'rekap_santri' },
+      { el: btnViewRekapGuru, key: 'rekap_guru' }
+    ];
+    allBtns.forEach(b => {
+      if (!b.el) return;
+      if (b.key === mode) {
+        b.el.classList.remove('btn-light');
+        b.el.classList.add('btn-primary');
       } else {
-        btnViewTable.classList.remove('btn-light');
-        btnViewTable.classList.add('btn-primary');
-        btnViewFeed.classList.remove('btn-primary');
-        btnViewFeed.classList.add('btn-light');
-        if (containerKasusFeed) containerKasusFeed.classList.add('d-none');
-        if (containerKasusTable) containerKasusTable.classList.remove('d-none');
+        b.el.classList.remove('btn-primary');
+        b.el.classList.add('btn-light');
       }
-    }
+    });
+
+    if (containerKasusFeed) containerKasusFeed.classList.toggle('d-none', mode !== 'feed');
+    if (containerKasusTable) containerKasusTable.classList.toggle('d-none', mode !== 'table');
+    if (containerKasusRekapSantri) containerKasusRekapSantri.classList.toggle('d-none', mode !== 'rekap_santri');
+    if (containerKasusRekapGuru) containerKasusRekapGuru.classList.toggle('d-none', mode !== 'rekap_guru');
   };
 
   function printKasusReport() {
@@ -2528,10 +3306,39 @@ document.addEventListener('DOMContentLoaded', () => {
     if (filterModeWaktuKasus && filterModeWaktuKasus.value === 'rentang') fetchCatatanKasus();
   });
 
+  if (filterSantriKasus) {
+    filterSantriKasus.addEventListener('change', () => {
+      currentSelectedSantriKasus = filterSantriKasus.value;
+      applyKasusFilters();
+    });
+  }
+  if (filterSortRekapSantriKasus) {
+    filterSortRekapSantriKasus.addEventListener('change', renderRekapSantriKasusTable);
+  }
   if (filterTipeKasus) filterTipeKasus.addEventListener('change', applyKasusFilters);
   if (filterSearchKasus) filterSearchKasus.addEventListener('input', applyKasusFilters);
   if (btnRefreshKasus) btnRefreshKasus.addEventListener('click', () => fetchCatatanKasus(true));
   if (btnPrintKasus) btnPrintKasus.addEventListener('click', printKasusReport);
+
+  // Interactive Column Sorting untuk Tabel Rekap Masalah Per Santri
+  document.querySelectorAll('.th-sortable-rekap-santri-kasus').forEach(th => {
+    th.addEventListener('click', () => {
+      const col = th.getAttribute('data-sort');
+      if (!filterSortRekapSantriKasus) return;
+      if (col === 'total') {
+        filterSortRekapSantriKasus.value = (filterSortRekapSantriKasus.value === 'total_desc') ? 'total_asc' : 'total_desc';
+      } else if (col === 'adab' || col === 'mention') {
+        filterSortRekapSantriKasus.value = 'adab_desc';
+      } else if (col === 'alfa') {
+        filterSortRekapSantriKasus.value = 'alfa_desc';
+      } else if (col === 'nama') {
+        filterSortRekapSantriKasus.value = 'nama_asc';
+      } else if (col === 'kelas') {
+        filterSortRekapSantriKasus.value = 'kelas_asc';
+      }
+      renderRekapSantriKasusTable();
+    });
+  });
 
   // Interactive Column Sorting untuk Tabel Catatan Permasalahan
   document.querySelectorAll('.th-sortable-kasus').forEach(th => {
@@ -2548,7 +3355,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // =========================================================================
-  // INTERAKSI WIDGET STATISTIK CATATAN KASUS (Total / KBM / Kasus Santri / Kelas)
+  // INTERAKSI WIDGET STATISTIK CATATAN KASUS (Total / KBM / Kasus Santri / Kelas / Highlight)
   // =========================================================================
   let currentKasusWidgetModalType = 'total';
 
@@ -2570,7 +3377,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Populate kelas dropdown
     if (filterKelasEl) {
-      const distinctClasses = [...new Set((currentKasusProcessedData || []).map(d => d.kelas).filter(Boolean))].sort();
+      const distinctClasses = [...new Set((currentRawLogData || []).map(d => d.kelas).filter(Boolean))].sort();
       filterKelasEl.innerHTML = '<option value="Semua">Semua Kelas</option>' + 
         distinctClasses.map(c => `<option value="${c}">Kelas ${c}</option>`).join('');
       if (currentSelectedKelasKasus !== 'Semua') {
@@ -2607,6 +3414,27 @@ document.addEventListener('DOMContentLoaded', () => {
       if (titleEl) titleEl.innerText = 'Rekapitulasi Sebaran Permasalahan Per Kelas';
       if (subtitleEl) subtitleEl.innerText = 'Perbandingan tingkat kejadian kendala KBM dan catatan adab antar kelas';
       if (closeBtn) closeBtn.className = 'btn-close btn-close-white';
+    } else if (type === 'top_santri') {
+      if (headerEl) headerEl.className = 'modal-header border-0 py-3 px-4 bg-danger text-white';
+      if (iconBox) iconBox.className = 'bg-white rounded-3 p-2 d-flex align-items-center justify-content-center shadow-sm';
+      if (iconEl) iconEl.className = 'bi bi-person-bounding-box fs-5 text-danger';
+      if (titleEl) titleEl.innerText = 'Peringkat Rekap Total Masalah Per Santri';
+      if (subtitleEl) subtitleEl.innerText = 'Diurutkan dari santri dengan frekuensi permasalahan terbanyak (Adab, KBM, & Alfa)';
+      if (closeBtn) closeBtn.className = 'btn-close btn-close-white';
+    } else if (type === 'guru_pencatat') {
+      if (headerEl) headerEl.className = 'modal-header border-0 py-3 px-4 bg-primary text-white';
+      if (iconBox) iconBox.className = 'bg-white rounded-3 p-2 d-flex align-items-center justify-content-center shadow-sm';
+      if (iconEl) iconEl.className = 'bi bi-person-workspace fs-5 text-primary';
+      if (titleEl) titleEl.innerText = 'Peringkat Guru Terbanyak Mencatat Permasalahan Santri';
+      if (subtitleEl) subtitleEl.innerText = 'Keaktifan guru dalam mencatat kejadian kelas, perilaku santri, serta presensi alfa';
+      if (closeBtn) closeBtn.className = 'btn-close btn-close-white';
+    } else if (type === 'guru_disiplin') {
+      if (headerEl) headerEl.className = 'modal-header border-0 py-3 px-4 bg-success text-white';
+      if (iconBox) iconBox.className = 'bg-white rounded-3 p-2 d-flex align-items-center justify-content-center shadow-sm';
+      if (iconEl) iconEl.className = 'bi bi-award-fill fs-5 text-success';
+      if (titleEl) titleEl.innerText = 'Peringkat Guru Terbaik dalam Kedisiplinan Presensi KBM';
+      if (subtitleEl) subtitleEl.innerText = 'Berdasarkan kepatuhan pengisian jurnal KBM dan ketepatan waktu jam masuk mengajar';
+      if (closeBtn) closeBtn.className = 'btn-close btn-close-white';
     }
 
     renderKasusWidgetModalBody();
@@ -2625,6 +3453,167 @@ document.addEventListener('DOMContentLoaded', () => {
     const kelasVal = filterKelasEl ? filterKelasEl.value : 'Semua';
     const query = searchInp ? searchInp.value.toLowerCase().trim() : '';
 
+    // Mode Khusus 1: Top Santri Bermasalah
+    if (currentKasusWidgetModalType === 'top_santri') {
+      let list = [...(currentKasusSantriRekapList || [])];
+      if (kelasVal !== 'Semua') {
+        list = list.filter(s => String(s.kelas).toLowerCase().trim() === String(kelasVal).toLowerCase().trim());
+      }
+      if (query) {
+        list = list.filter(s => (s.nama + ' ' + s.nis + ' ' + s.kelas).toLowerCase().includes(query));
+      }
+      if (countTxt) countTxt.innerText = `${list.length} Santri Tercatat`;
+      if (list.length === 0) {
+        bodyEl.innerHTML = `<div class="text-center py-5 text-muted">Tidak ada data santri yang cocok dengan filter.</div>`;
+        return;
+      }
+      const rows = list.map((s, idx) => `
+        <tr>
+          <td class="text-center fw-bold text-muted">${idx + 1}</td>
+          <td>
+            <div class="fw-bold text-dark">${s.nama}</div>
+            ${s.nis && s.nis !== '-' ? `<small class="text-muted font-monospace">NIS: ${s.nis}</small>` : ''}
+          </td>
+          <td class="text-center"><span class="badge bg-primary rounded-pill">${s.kelas}</span></td>
+          <td class="text-center"><span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2">${s.adabCount}</span></td>
+          <td class="text-center"><span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill px-2">${s.mentionCount}</span></td>
+          <td class="text-center"><span class="badge bg-warning-subtle text-dark border rounded-pill px-2">${s.alfaCount}</span></td>
+          <td class="text-center"><span class="badge bg-danger rounded-pill px-3 py-1 fw-bold">${s.totalMasalah} Masalah</span></td>
+          <td class="text-center">
+            <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3 py-1 fw-semibold btn-modal-select-santri-kasus" data-key="${s.key}">
+              <i class="bi bi-funnel-fill me-1"></i> Filter Santri
+            </button>
+          </td>
+        </tr>
+      `).join('');
+      bodyEl.innerHTML = `
+        <div class="table-responsive" style="max-height: 480px;">
+          <table class="table table-sm table-hover align-middle mb-0">
+            <thead class="table-light text-muted small position-sticky top-0 shadow-sm">
+              <tr>
+                <th class="text-center" style="width: 45px;">#</th>
+                <th>Nama Santri</th>
+                <th class="text-center">Kelas</th>
+                <th class="text-center">Adab</th>
+                <th class="text-center">Catatan KBM</th>
+                <th class="text-center">Alfa</th>
+                <th class="text-center">Total Masalah</th>
+                <th class="text-center">Aksi</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      `;
+      bodyEl.querySelectorAll('.btn-modal-select-santri-kasus').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const key = e.currentTarget.getAttribute('data-key');
+          const modalEl = document.getElementById('modal-widget-detail-kasus');
+          if (modalEl) bootstrap.Modal.getInstance(modalEl)?.hide();
+          window.selectSantriKasusFilter(key);
+        });
+      });
+      return;
+    }
+
+    // Mode Khusus 2: Guru Pencatat Masalah
+    if (currentKasusWidgetModalType === 'guru_pencatat') {
+      let list = [...(currentKasusGuruPencatatList || [])];
+      if (kelasVal !== 'Semua') {
+        list = list.filter(g => g.kelasSet && g.kelasSet.has(kelasVal));
+      }
+      if (query) {
+        list = list.filter(g => (g.guru + ' ' + Array.from(g.mapelSet || []).join(' ')).toLowerCase().includes(query));
+      }
+      if (countTxt) countTxt.innerText = `${list.length} Guru Pencatat`;
+      if (list.length === 0) {
+        bodyEl.innerHTML = `<div class="text-center py-5 text-muted">Tidak ada data guru pencatat pada filter ini.</div>`;
+        return;
+      }
+      const rows = list.map((g, idx) => `
+        <tr>
+          <td class="text-center fw-bold text-muted">${idx + 1}</td>
+          <td>
+            <div class="fw-bold text-dark">${g.guru}</div>
+            <small class="text-muted">Mapel: ${Array.from(g.mapelSet || []).join(', ') || '-'} | Kelas: ${Array.from(g.kelasSet || []).sort().join(', ') || '-'}</small>
+          </td>
+          <td class="text-center"><span class="badge bg-light text-dark border">${g.totalJurnalIsi} Sesi</span></td>
+          <td class="text-center"><span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2 py-1 fw-bold">${g.kasusSantriCount}</span></td>
+          <td class="text-center"><span class="badge bg-warning-subtle text-dark border rounded-pill px-2 py-1 fw-bold">${g.kendalaKelasCount}</span></td>
+          <td class="text-center"><span class="badge bg-secondary-subtle text-secondary border rounded-pill px-2 py-1">${g.alfaDicatatCount}</span></td>
+          <td class="text-center"><span class="badge bg-primary rounded-pill px-3 py-1 fw-bold fs-6">${g.totalCatatanMasalah} Catatan</span></td>
+        </tr>
+      `).join('');
+      bodyEl.innerHTML = `
+        <div class="table-responsive" style="max-height: 480px;">
+          <table class="table table-sm table-hover align-middle mb-0">
+            <thead class="table-light text-muted small position-sticky top-0 shadow-sm">
+              <tr>
+                <th class="text-center" style="width: 45px;">#</th>
+                <th>Nama Guru Pengajar</th>
+                <th class="text-center">Jurnal Diisi</th>
+                <th class="text-center">Kasus Santri</th>
+                <th class="text-center">Kendala Kelas</th>
+                <th class="text-center">Alfa Dicatat</th>
+                <th class="text-center">Total Catatan Masalah</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      `;
+      return;
+    }
+
+    // Mode Khusus 3: Guru Terbaik Disiplin Presensi
+    if (currentKasusWidgetModalType === 'guru_disiplin') {
+      let list = [...(currentKasusGuruDisiplinList || [])];
+      if (kelasVal !== 'Semua') {
+        list = list.filter(g => g.kelasSet && g.kelasSet.has(kelasVal));
+      }
+      if (query) {
+        list = list.filter(g => (g.guru + ' ' + Array.from(g.mapelSet || []).join(' ')).toLowerCase().includes(query));
+      }
+      if (countTxt) countTxt.innerText = `${list.length} Guru Aktif`;
+      if (list.length === 0) {
+        bodyEl.innerHTML = `<div class="text-center py-5 text-muted">Tidak ada data kedisiplinan guru pada filter ini.</div>`;
+        return;
+      }
+      const rows = list.map((g, idx) => `
+        <tr>
+          <td class="text-center fw-bold text-muted">${idx + 1}</td>
+          <td>
+            <div class="fw-bold text-dark">${g.guru}</div>
+            <small class="text-muted">Mapel: ${Array.from(g.mapelSet || []).join(', ') || '-'} | Kelas: ${Array.from(g.kelasSet || []).sort().join(', ') || '-'}</small>
+          </td>
+          <td class="text-center"><span class="fw-bold">${g.hadirCount}</span>/${g.totalJadwal} (${g.persenHadir}%)</td>
+          <td class="text-center"><span class="fw-bold text-primary">${g.jurnalIsiCount}</span>/${g.totalJadwal} (${g.persenJurnal}%)</td>
+          <td class="text-center"><span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-1 fw-bold">${g.tepatWaktuCount} Sesi (${g.persenTepatWaktu}%)</span></td>
+          <td class="text-center">${g.terlambatCount > 0 ? `<span class="badge bg-danger-subtle text-danger border rounded-pill px-2 py-1">${g.terlambatCount}x (~${g.avgLateMins} mnt)</span>` : '<span class="badge bg-light text-success border rounded-pill">0 Telat</span>'}</td>
+          <td class="text-center"><span class="badge bg-success rounded-pill px-3 py-1 fw-bold fs-6">${g.skorDisiplin}%</span></td>
+        </tr>
+      `).join('');
+      bodyEl.innerHTML = `
+        <div class="table-responsive" style="max-height: 480px;">
+          <table class="table table-sm table-hover align-middle mb-0">
+            <thead class="table-light text-muted small position-sticky top-0 shadow-sm">
+              <tr>
+                <th class="text-center" style="width: 45px;">#</th>
+                <th>Nama Guru Pengajar</th>
+                <th class="text-center">Kehadiran</th>
+                <th class="text-center">Jurnal Terisi</th>
+                <th class="text-center">Tepat Waktu</th>
+                <th class="text-center">Keterlambatan</th>
+                <th class="text-center">Skor Disiplin</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      `;
+      return;
+    }
+
     let data = currentKasusProcessedData || [];
 
     if (kelasVal !== 'Semua') {
@@ -2634,14 +3623,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if (currentKasusWidgetModalType === 'kbm') {
       data = data.filter(item => item.hasCatatanKelas);
     } else if (currentKasusWidgetModalType === 'santri') {
-      data = data.filter(item => item.hasSantriCatatan || item.hasAlfa);
+      data = data.filter(item => item.hasSantriCatatan || item.hasAlfa || item.hasSantriMentioned);
     }
 
     if (query) {
       data = data.filter(item => {
         const text = (String(item.catatan_kelas ?? '') + ' ' + String(item.guru ?? '') + ' ' + String(item.pelajaran ?? '') + ' ' + String(item.materi ?? '') + ' ' + String(item.kelas ?? '')).toLowerCase();
         const matchSantri = (item.santri_catatan || []).some(s => (String(s.nama ?? '') + ' ' + String(s.catatan ?? '')).toLowerCase().includes(query)) ||
-                            (item.santri_alfa || []).some(s => String(s.nama ?? '').toLowerCase().includes(query));
+                            (item.santri_alfa || []).some(s => String(s.nama ?? '').toLowerCase().includes(query)) ||
+                            (item.santri_mentioned || []).some(s => String(s.nama ?? '').toLowerCase().includes(query));
         return text.includes(query) || matchSantri;
       });
     }
@@ -2657,6 +3647,7 @@ document.addEventListener('DOMContentLoaded', () => {
         classMap[kl].total++;
         if (item.hasCatatanKelas) classMap[kl].kbm++;
         if (item.hasSantriCatatan) classMap[kl].santri += item.santri_catatan.length;
+        if (item.hasSantriMentioned) classMap[kl].santri += item.santri_mentioned.length;
         if (item.hasAlfa) classMap[kl].alfa += item.santri_alfa.length;
         classMap[kl].items.push(item);
       });
@@ -2757,6 +3748,19 @@ document.addEventListener('DOMContentLoaded', () => {
             catatan: s.catatan
           });
         });
+        (item.santri_mentioned || []).forEach(s => {
+          listSantriRows.push({
+            tanggal: item.tanggal,
+            hari: item.hari,
+            waktu: item.waktu,
+            kelas: item.kelas,
+            pelajaran: item.pelajaran,
+            guru: item.guru,
+            nama: s.nama,
+            tipe: 'Disebut di Catatan Kelas',
+            catatan: s.catatan
+          });
+        });
         (item.santri_alfa || []).forEach(s => {
           listSantriRows.push({
             tanggal: item.tanggal,
@@ -2792,7 +3796,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <small class="text-muted">Guru: ${s.guru}</small>
           </td>
           <td>
-            <span class="badge ${s.tipe.includes('Alfa') ? 'bg-danger' : 'bg-warning text-dark'} rounded-pill px-2 py-1">${s.tipe}</span>
+            <span class="badge ${s.tipe.includes('Alfa') ? 'bg-danger' : s.tipe.includes('Kelas') ? 'bg-info text-dark' : 'bg-warning text-dark'} rounded-pill px-2 py-1">${s.tipe}</span>
           </td>
           <td class="small text-danger fw-medium">
             <div class="p-2 rounded bg-danger-subtle border border-danger-subtle">${s.catatan}</div>
@@ -2830,6 +3834,9 @@ document.addEventListener('DOMContentLoaded', () => {
               <span class="fw-bold">${s.nama}</span>: <span>${s.catatan}</span>
             </div>
           `));
+        }
+        if (item.santri_mentioned && item.santri_mentioned.length > 0) {
+          santriDetail.push(...item.santri_mentioned.map(s => `<span class="badge bg-info-subtle text-dark border border-info-subtle rounded-pill px-2 py-1 me-1">KBM: ${s.nama}</span>`));
         }
         if (item.santri_alfa && item.santri_alfa.length > 0) {
           santriDetail.push(...item.santri_alfa.map(s => `<span class="badge bg-danger rounded-pill px-2 py-1 me-1">Alfa: ${s.nama}</span>`));
@@ -2886,7 +3893,11 @@ document.addEventListener('DOMContentLoaded', () => {
   if (btnApplyKasusWidgetFilter) {
     btnApplyKasusWidgetFilter.addEventListener('click', () => {
       const t = currentKasusWidgetModalType;
-      if (filterTipeKasus) {
+      if (t === 'top_santri') {
+        window.switchKasusView('rekap_santri');
+      } else if (t === 'guru_pencatat' || t === 'guru_disiplin') {
+        window.switchKasusView('rekap_guru');
+      } else if (filterTipeKasus) {
         if (t === 'kbm') filterTipeKasus.value = 'kelas';
         else if (t === 'santri') filterTipeKasus.value = 'santri';
         else filterTipeKasus.value = 'Semua';
@@ -2912,11 +3923,17 @@ document.addEventListener('DOMContentLoaded', () => {
   const cardKasusKbm = document.getElementById('card-kasus-kbm');
   const cardKasusSantri = document.getElementById('card-kasus-santri');
   const cardKasusKelasCount = document.getElementById('card-kasus-kelas-count');
+  const cardKasusTopSantri = document.getElementById('card-kasus-top-santri');
+  const cardKasusTopGuruPencatat = document.getElementById('card-kasus-top-guru-pencatat');
+  const cardKasusTopGuruDisiplin = document.getElementById('card-kasus-top-guru-disiplin');
 
   if (cardKasusTotal) cardKasusTotal.addEventListener('click', () => openKasusWidgetDetail('total'));
   if (cardKasusKbm) cardKasusKbm.addEventListener('click', () => openKasusWidgetDetail('kbm'));
   if (cardKasusSantri) cardKasusSantri.addEventListener('click', () => openKasusWidgetDetail('santri'));
   if (cardKasusKelasCount) cardKasusKelasCount.addEventListener('click', () => openKasusWidgetDetail('kelas_count'));
+  if (cardKasusTopSantri) cardKasusTopSantri.addEventListener('click', () => openKasusWidgetDetail('top_santri'));
+  if (cardKasusTopGuruPencatat) cardKasusTopGuruPencatat.addEventListener('click', () => openKasusWidgetDetail('guru_pencatat'));
+  if (cardKasusTopGuruDisiplin) cardKasusTopGuruDisiplin.addEventListener('click', () => openKasusWidgetDetail('guru_disiplin'));
 
   // Enable cascade selects and filter based on selected Guru
   selGuru.addEventListener('change', updateMapel);
