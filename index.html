@@ -812,16 +812,17 @@
                   <table class="table table-hover align-middle mb-0 small">
                     <thead class="table-light text-muted">
                       <tr>
-                        <th class="py-2 px-3 text-center" style="width: 50px;">#</th>
+                        <th class="py-2 px-3 text-center" style="width: 45px;">#</th>
                         <th class="py-2 px-3">Nama Guru</th>
                         <th class="py-2 px-2 text-center" title="Jumlah Catatan Masalah Individu Santri">Kasus Santri</th>
                         <th class="py-2 px-2 text-center" title="Jumlah Catatan Kendala Kelas">Kendala Kelas</th>
                         <th class="py-2 px-2 text-center" title="Jumlah Santri Alfa yang Dicatat">Alfa Dicatat</th>
-                        <th class="py-2 px-3 text-center text-primary fw-bold">Total Catatan</th>
+                        <th class="py-2 px-2 text-center text-primary fw-bold">Total Catatan</th>
+                        <th class="py-2 px-2 text-center" style="width: 85px;">Aksi</th>
                       </tr>
                     </thead>
                     <tbody id="body-rekap-guru-pencatat">
-                      <tr><td colspan="6" class="text-center py-4 text-muted">Memuat data...</td></tr>
+                      <tr><td colspan="7" class="text-center py-4 text-muted">Memuat data...</td></tr>
                     </tbody>
                   </table>
                 </div>
@@ -844,16 +845,17 @@
                   <table class="table table-hover align-middle mb-0 small">
                     <thead class="table-light text-muted">
                       <tr>
-                        <th class="py-2 px-3 text-center" style="width: 50px;">#</th>
+                        <th class="py-2 px-3 text-center" style="width: 45px;">#</th>
                         <th class="py-2 px-3">Nama Guru</th>
                         <th class="py-2 px-2 text-center" title="Hadir dibanding Total Jadwal">Hadir / Jadwal</th>
                         <th class="py-2 px-2 text-center" title="Jumlah Kehadiran Tepat Waktu">Tepat Waktu</th>
                         <th class="py-2 px-2 text-center" title="Rata-rata Keterlambatan">Rata Telat</th>
-                        <th class="py-2 px-3 text-center text-success fw-bold">Skor Disiplin</th>
+                        <th class="py-2 px-2 text-center text-success fw-bold">Skor Disiplin</th>
+                        <th class="py-2 px-2 text-center" style="width: 85px;">Aksi</th>
                       </tr>
                     </thead>
                     <tbody id="body-rekap-guru-disiplin">
-                      <tr><td colspan="6" class="text-center py-4 text-muted">Memuat data...</td></tr>
+                      <tr><td colspan="7" class="text-center py-4 text-muted">Memuat data...</td></tr>
                     </tbody>
                   </table>
                 </div>
@@ -1384,6 +1386,246 @@
     </div>
   </div>
 
+  <!-- Modal Rincian Guru Pencatat Permasalahan Santri & KBM -->
+  <div class="modal fade" id="modal-detail-guru-pencatat" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
+      <div class="modal-content border-0 rounded-4 shadow-lg overflow-hidden">
+        <div class="modal-header border-0 py-3 px-4 bg-primary text-white">
+          <div class="d-flex align-items-center gap-3">
+            <div class="bg-white rounded-3 p-2 d-flex align-items-center justify-content-center shadow-sm flex-shrink-0" style="width: 44px; height: 44px;">
+              <i class="bi bi-person-workspace fs-4 text-primary"></i>
+            </div>
+            <div>
+              <div class="d-flex align-items-center gap-2 flex-wrap">
+                <h5 class="modal-title fw-bold text-white mb-0" id="modal-guru-pencatat-nama">Nama Guru</h5>
+                <span class="badge bg-white text-primary rounded-pill px-3 py-1 fw-bold small" id="modal-guru-pencatat-rank">#1 Pencatat Masalah</span>
+              </div>
+              <p class="mb-0 small text-white text-opacity-85 mt-1" id="modal-guru-pencatat-sub">Rincian seluruh catatan adab santri, kendala KBM, dan absensi alfa</p>
+            </div>
+          </div>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+
+        <!-- Summary Statistics Bar -->
+        <div class="px-4 py-3 bg-light border-bottom">
+          <div class="row g-2">
+            <div class="col-6 col-md-3">
+              <div class="p-2 px-3 rounded-3 bg-white border text-center shadow-sm">
+                <span class="text-muted d-block" style="font-size: 11px;">Total Catatan Masalah</span>
+                <strong class="text-primary fs-5 fw-extrabold" id="modal-guru-pencatat-stat-total">0</strong>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="p-2 px-3 rounded-3 bg-white border text-center shadow-sm">
+                <span class="text-muted d-block" style="font-size: 11px;">Kasus Adab Santri</span>
+                <strong class="text-danger fs-5 fw-extrabold" id="modal-guru-pencatat-stat-adab">0</strong>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="p-2 px-3 rounded-3 bg-white border text-center shadow-sm">
+                <span class="text-muted d-block" style="font-size: 11px;">Kendala Kelas / KBM</span>
+                <strong class="text-warning-emphasis fs-5 fw-extrabold" id="modal-guru-pencatat-stat-kelas">0</strong>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="p-2 px-3 rounded-3 bg-white border text-center shadow-sm">
+                <span class="text-muted d-block" style="font-size: 11px;">Santri Alfa Dicatat</span>
+                <strong class="text-secondary fs-5 fw-extrabold" id="modal-guru-pencatat-stat-alfa">0</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- Controls (Tabs + Search) -->
+          <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mt-3 pt-2 border-top">
+            <div class="btn-group btn-group-sm flex-wrap shadow-sm rounded-pill p-1 bg-white border" role="group">
+              <button type="button" class="btn btn-sm btn-primary rounded-pill px-3 py-1 fw-semibold btn-tab-modal-guru-pencatat active" data-tab="semua">Semua (<span id="count-tab-pencatat-semua">0</span>)</button>
+              <button type="button" class="btn btn-sm btn-light rounded-pill px-3 py-1 fw-semibold btn-tab-modal-guru-pencatat" data-tab="adab">Adab Santri (<span id="count-tab-pencatat-adab">0</span>)</button>
+              <button type="button" class="btn btn-sm btn-light rounded-pill px-3 py-1 fw-semibold btn-tab-modal-guru-pencatat" data-tab="kbm">Kendala KBM (<span id="count-tab-pencatat-kbm">0</span>)</button>
+              <button type="button" class="btn btn-sm btn-light rounded-pill px-3 py-1 fw-semibold btn-tab-modal-guru-pencatat" data-tab="alfa">Alfa (<span id="count-tab-pencatat-alfa">0</span>)</button>
+            </div>
+            <div class="input-group input-group-sm" style="max-width: 260px;">
+              <span class="input-group-text bg-white border-1"><i class="bi bi-search text-muted"></i></span>
+              <input type="text" id="modal-guru-pencatat-search" class="form-control bg-white border-1" placeholder="Cari santri/catatan/materi...">
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-body p-3 p-md-4" id="modal-guru-pencatat-body">
+          <!-- Diisi tabel / kartu riwayat via JS -->
+        </div>
+
+        <div class="modal-footer border-0 bg-light py-2 px-4 justify-content-between flex-wrap gap-2">
+          <button type="button" class="btn btn-secondary btn-sm px-4 rounded-pill" data-bs-dismiss="modal">Tutup</button>
+          <button type="button" class="btn btn-primary btn-sm px-4 rounded-pill fw-bold shadow-sm" onclick="window.print()">
+            <i class="bi bi-printer me-1"></i> Cetak Rincian Ini
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Rincian Guru Disiplin Presensi KBM -->
+  <div class="modal fade" id="modal-detail-guru-disiplin" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
+      <div class="modal-content border-0 rounded-4 shadow-lg overflow-hidden">
+        <div class="modal-header border-0 py-3 px-4 bg-success text-white">
+          <div class="d-flex align-items-center gap-3">
+            <div class="bg-white rounded-3 p-2 d-flex align-items-center justify-content-center shadow-sm flex-shrink-0" style="width: 44px; height: 44px;">
+              <i class="bi bi-patch-check-fill fs-4 text-success"></i>
+            </div>
+            <div>
+              <div class="d-flex align-items-center gap-2 flex-wrap">
+                <h5 class="modal-title fw-bold text-white mb-0" id="modal-guru-disiplin-nama">Nama Guru</h5>
+                <span class="badge bg-white text-success rounded-pill px-3 py-1 fw-bold small" id="modal-guru-disiplin-rank">#1 Disiplin</span>
+                <span class="badge bg-warning text-dark rounded-pill px-3 py-1 fw-bold small" id="modal-guru-disiplin-score">Skor: 100%</span>
+              </div>
+              <p class="mb-0 small text-white text-opacity-85 mt-1" id="modal-guru-disiplin-sub">Rincian log presensi jam masuk/keluar, kehadiran, dan kelengkapan jurnal KBM</p>
+            </div>
+          </div>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+
+        <!-- Summary Statistics Bar -->
+        <div class="px-4 py-3 bg-light border-bottom">
+          <div class="row g-2">
+            <div class="col-6 col-md-2">
+              <div class="p-2 px-3 rounded-3 bg-white border text-center shadow-sm">
+                <span class="text-muted d-block" style="font-size: 11px;">Total Jadwal</span>
+                <strong class="text-dark fs-5 fw-extrabold" id="modal-guru-disiplin-stat-jadwal">0</strong>
+              </div>
+            </div>
+            <div class="col-6 col-md-2">
+              <div class="p-2 px-3 rounded-3 bg-white border text-center shadow-sm">
+                <span class="text-muted d-block" style="font-size: 11px;">Hadir Mengajar</span>
+                <strong class="text-success fs-5 fw-extrabold" id="modal-guru-disiplin-stat-hadir">0</strong>
+              </div>
+            </div>
+            <div class="col-6 col-md-2">
+              <div class="p-2 px-3 rounded-3 bg-white border text-center shadow-sm">
+                <span class="text-muted d-block" style="font-size: 11px;">Tepat Waktu</span>
+                <strong class="text-success fs-5 fw-extrabold" id="modal-guru-disiplin-stat-tepat">0</strong>
+              </div>
+            </div>
+            <div class="col-6 col-md-2">
+              <div class="p-2 px-3 rounded-3 bg-white border text-center shadow-sm">
+                <span class="text-muted d-block" style="font-size: 11px;">Terlambat</span>
+                <strong class="text-danger fs-5 fw-extrabold" id="modal-guru-disiplin-stat-telat">0</strong>
+              </div>
+            </div>
+            <div class="col-6 col-md-2">
+              <div class="p-2 px-3 rounded-3 bg-white border text-center shadow-sm">
+                <span class="text-muted d-block" style="font-size: 11px;">Jurnal Terisi</span>
+                <strong class="text-primary fs-5 fw-extrabold" id="modal-guru-disiplin-stat-jurnal">0</strong>
+              </div>
+            </div>
+            <div class="col-6 col-md-2">
+              <div class="p-2 px-3 rounded-3 bg-white border text-center shadow-sm">
+                <span class="text-muted d-block" style="font-size: 11px;">Skor Disiplin</span>
+                <strong class="text-success fs-5 fw-extrabold" id="modal-guru-disiplin-stat-skor">0%</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- Controls (Tabs + Search) -->
+          <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mt-3 pt-2 border-top">
+            <div class="btn-group btn-group-sm flex-wrap shadow-sm rounded-pill p-1 bg-white border" role="group">
+              <button type="button" class="btn btn-sm btn-success rounded-pill px-3 py-1 fw-semibold btn-tab-modal-guru-disiplin active" data-tab="semua">Semua Sesi (<span id="count-tab-disiplin-semua">0</span>)</button>
+              <button type="button" class="btn btn-sm btn-light rounded-pill px-3 py-1 fw-semibold btn-tab-modal-guru-disiplin" data-tab="tepat">Tepat Waktu (<span id="count-tab-disiplin-tepat">0</span>)</button>
+              <button type="button" class="btn btn-sm btn-light rounded-pill px-3 py-1 fw-semibold btn-tab-modal-guru-disiplin" data-tab="telat">Terlambat (<span id="count-tab-disiplin-telat">0</span>)</button>
+              <button type="button" class="btn btn-sm btn-light rounded-pill px-3 py-1 fw-semibold btn-tab-modal-guru-disiplin" data-tab="terisi">Jurnal Terisi (<span id="count-tab-disiplin-terisi">0</span>)</button>
+              <button type="button" class="btn btn-sm btn-light rounded-pill px-3 py-1 fw-semibold btn-tab-modal-guru-disiplin" data-tab="belum">Belum Terisi (<span id="count-tab-disiplin-belum">0</span>)</button>
+            </div>
+            <div class="input-group input-group-sm" style="max-width: 260px;">
+              <span class="input-group-text bg-white border-1"><i class="bi bi-search text-muted"></i></span>
+              <input type="text" id="modal-guru-disiplin-search" class="form-control bg-white border-1" placeholder="Cari mapel/kelas/tanggal...">
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-body p-3 p-md-4" id="modal-guru-disiplin-body">
+          <!-- Diisi tabel log sesi via JS -->
+        </div>
+
+        <div class="modal-footer border-0 bg-light py-2 px-4 justify-content-between flex-wrap gap-2">
+          <button type="button" class="btn btn-secondary btn-sm px-4 rounded-pill" data-bs-dismiss="modal">Tutup</button>
+          <button type="button" class="btn btn-success btn-sm px-4 rounded-pill fw-bold shadow-sm" onclick="window.print()">
+            <i class="bi bi-printer me-1"></i> Cetak Log Presensi Ini
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Rincian Masalah Per Santri -->
+  <div class="modal fade" id="modal-detail-santri-kasus" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+      <div class="modal-content border-0 rounded-4 shadow-lg overflow-hidden">
+        <div class="modal-header border-0 py-3 px-4 bg-danger text-white">
+          <div class="d-flex align-items-center gap-3">
+            <div class="bg-white rounded-3 p-2 d-flex align-items-center justify-content-center shadow-sm flex-shrink-0" style="width: 44px; height: 44px;">
+              <i class="bi bi-person-lines-fill fs-4 text-danger"></i>
+            </div>
+            <div>
+              <div class="d-flex align-items-center gap-2 flex-wrap">
+                <h5 class="modal-title fw-bold text-white mb-0" id="modal-santri-kasus-nama">Nama Santri</h5>
+                <span class="badge bg-white text-danger rounded-pill px-3 py-1 fw-bold small" id="modal-santri-kasus-kelas">Kelas --</span>
+                <span class="badge bg-dark rounded-pill px-2 py-1 font-monospace small" id="modal-santri-kasus-nis">NIS: --</span>
+              </div>
+              <p class="mb-0 small text-white text-opacity-85 mt-1">Riwayat lengkap catatan adab, kendala KBM, dan absensi alfa santri</p>
+            </div>
+          </div>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+
+        <!-- Summary Statistics Bar -->
+        <div class="px-4 py-3 bg-light border-bottom">
+          <div class="row g-2">
+            <div class="col-3">
+              <div class="p-2 px-3 rounded-3 bg-white border text-center shadow-sm">
+                <span class="text-muted d-block" style="font-size: 11px;">Total Masalah</span>
+                <strong class="text-danger fs-5 fw-extrabold" id="modal-santri-kasus-stat-total">0</strong>
+              </div>
+            </div>
+            <div class="col-3">
+              <div class="p-2 px-3 rounded-3 bg-white border text-center shadow-sm">
+                <span class="text-muted d-block" style="font-size: 11px;">Catatan Adab</span>
+                <strong class="text-danger fs-5 fw-extrabold" id="modal-santri-kasus-stat-adab">0</strong>
+              </div>
+            </div>
+            <div class="col-3">
+              <div class="p-2 px-3 rounded-3 bg-white border text-center shadow-sm">
+                <span class="text-muted d-block" style="font-size: 11px;">Catatan KBM</span>
+                <strong class="text-info fs-5 fw-extrabold" id="modal-santri-kasus-stat-kbm">0</strong>
+              </div>
+            </div>
+            <div class="col-3">
+              <div class="p-2 px-3 rounded-3 bg-white border text-center shadow-sm">
+                <span class="text-muted d-block" style="font-size: 11px;">Alfa / Mangkir</span>
+                <strong class="text-warning-emphasis fs-5 fw-extrabold" id="modal-santri-kasus-stat-alfa">0</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-body p-3 p-md-4" id="modal-santri-kasus-body">
+          <!-- Diisi daftar riwayat via JS -->
+        </div>
+
+        <div class="modal-footer border-0 bg-light py-2 px-4 justify-content-between flex-wrap gap-2">
+          <div class="d-flex align-items-center gap-2">
+            <button type="button" class="btn btn-secondary btn-sm px-3 rounded-pill" data-bs-dismiss="modal">Tutup</button>
+            <button type="button" class="btn btn-outline-danger btn-sm px-3 rounded-pill fw-semibold" id="btn-modal-santri-filter-main">
+              <i class="bi bi-funnel-fill me-1"></i> Filter Santri Ini di Halaman Utama
+            </button>
+          </div>
+          <button type="button" class="btn btn-primary btn-sm px-3 rounded-pill fw-bold shadow-sm" onclick="window.print()">
+            <i class="bi bi-printer me-1"></i> Cetak Riwayat
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Lock Screen Overlay KBM -->
   <div id="kbm-lock-overlay" class="kbm-lock-overlay d-none">
     <div class="lock-card shadow-lg animate-fade-in text-center p-4 p-md-5">
@@ -1585,11 +1827,11 @@
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  <script src="app.js?v=33"></script>
+  <script src="app.js?v=34"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function() {
-        navigator.serviceWorker.register('./sw.js?v=33').then(function(registration) {
+        navigator.serviceWorker.register('./sw.js?v=34').then(function(registration) {
           console.log('ServiceWorker registration successful with scope: ', registration.scope);
           registration.update();
         }, function(err) {

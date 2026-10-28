@@ -2918,7 +2918,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const moreCount = s.records.length > 3 ? `<div class="small text-primary fw-semibold">+${s.records.length - 3} catatan lainnya...</div>` : '';
 
       return `
-        <tr>
+        <tr class="table-row-clickable" onclick="window.openDetailSantriKasus('${s.key.replace(/'/g, "\\'")}')">
           <td class="text-center">${rankBadge}</td>
           <td>
             <div class="fw-bold text-dark">${s.nama}</div>
@@ -2935,9 +2935,12 @@ document.addEventListener('DOMContentLoaded', () => {
             ${summaryPills}
             ${moreCount}
           </td>
-          <td class="text-center text-nowrap">
-            <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3 py-1 fw-semibold" onclick="window.selectSantriKasusFilter('${s.key.replace(/'/g, "\\'")}')">
-              <i class="bi bi-funnel-fill me-1"></i> Filter Santri
+          <td class="text-center text-nowrap" onclick="event.stopPropagation();">
+            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-2 py-1 fw-semibold me-1" onclick="window.openDetailSantriKasus('${s.key.replace(/'/g, "\\'")}')" title="Buka Rincian Lengkap Permasalahan">
+              <i class="bi bi-eye me-1"></i> Rincian
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-2 py-1 fw-semibold" onclick="window.selectSantriKasusFilter('${s.key.replace(/'/g, "\\'")}')" title="Filter Santri Ini di Tampilan Kasus">
+              <i class="bi bi-funnel-fill me-1"></i> Filter
             </button>
           </td>
         </tr>
@@ -2953,7 +2956,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (tbodyRekapGuruPencatat) {
       const list = currentKasusGuruPencatatList || [];
       if (list.length === 0) {
-        tbodyRekapGuruPencatat.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-muted">Belum ada catatan permasalahan yang diinput oleh guru pada filter ini.</td></tr>`;
+        tbodyRekapGuruPencatat.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-muted">Belum ada catatan permasalahan yang diinput oleh guru pada filter ini.</td></tr>`;
       } else {
         tbodyRekapGuruPencatat.innerHTML = list.map((g, idx) => {
           const rankBadge = idx === 0
@@ -2966,7 +2969,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const mapelStr = Array.from(g.mapelSet || []).slice(0, 2).join(', ');
           const kelasStr = Array.from(g.kelasSet || []).sort().join(', ');
           return `
-            <tr>
+            <tr class="table-row-clickable" onclick="window.openDetailGuruPencatat('${g.guru.replace(/'/g, "\\'")}')" title="Klik untuk melihat seluruh catatan yang dicatat oleh ${g.guru}">
               <td class="text-center">${rankBadge}</td>
               <td>
                 <div class="fw-bold text-dark">${g.guru}</div>
@@ -2977,6 +2980,11 @@ document.addEventListener('DOMContentLoaded', () => {
               <td class="text-center">${g.alfaDicatatCount > 0 ? `<span class="badge bg-secondary-subtle text-secondary border rounded-pill px-2 py-1">${g.alfaDicatatCount}</span>` : '<span class="text-muted">0</span>'}</td>
               <td class="text-center">
                 <span class="badge bg-primary rounded-pill px-3 py-1 fw-bold">${g.totalCatatanMasalah} Catatan</span>
+              </td>
+              <td class="text-center text-nowrap" onclick="event.stopPropagation();">
+                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-2 py-1 fw-semibold" onclick="window.openDetailGuruPencatat('${g.guru.replace(/'/g, "\\'")}')" title="Lihat rincian catatan">
+                  <i class="bi bi-journal-text me-1"></i> Rincian
+                </button>
               </td>
             </tr>
           `;
@@ -2991,7 +2999,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (tbodyRekapGuruDisiplin) {
       const list = currentKasusGuruDisiplinList || [];
       if (list.length === 0) {
-        tbodyRekapGuruDisiplin.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-muted">Belum ada data kehadiran guru pada filter ini.</td></tr>`;
+        tbodyRekapGuruDisiplin.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-muted">Belum ada data kehadiran guru pada filter ini.</td></tr>`;
       } else {
         tbodyRekapGuruDisiplin.innerHTML = list.map((g, idx) => {
           const rankBadge = idx === 0
@@ -3004,7 +3012,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const mapelStr = Array.from(g.mapelSet || []).slice(0, 2).join(', ');
           const scoreBadgeClass = g.skorDisiplin >= 90 ? 'bg-success' : g.skorDisiplin >= 75 ? 'bg-primary' : 'bg-warning text-dark';
           return `
-            <tr>
+            <tr class="table-row-clickable table-row-clickable-success" onclick="window.openDetailGuruDisiplin('${g.guru.replace(/'/g, "\\'")}')" title="Klik untuk melihat seluruh riwayat presensi & jurnal ${g.guru}">
               <td class="text-center">${rankBadge}</td>
               <td>
                 <div class="fw-bold text-dark">${g.guru}</div>
@@ -3025,6 +3033,11 @@ document.addEventListener('DOMContentLoaded', () => {
               </td>
               <td class="text-center">
                 <span class="badge ${scoreBadgeClass} rounded-pill px-3 py-1 fw-bold">${g.skorDisiplin}%</span>
+              </td>
+              <td class="text-center text-nowrap" onclick="event.stopPropagation();">
+                <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-2 py-1 fw-semibold" onclick="window.openDetailGuruDisiplin('${g.guru.replace(/'/g, "\\'")}')" title="Lihat riwayat presensi">
+                  <i class="bi bi-clock-history me-1"></i> Rincian
+                </button>
               </td>
             </tr>
           `;
@@ -3468,7 +3481,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
       const rows = list.map((s, idx) => `
-        <tr>
+        <tr class="table-row-clickable" onclick="const m = bootstrap.Modal.getInstance(document.getElementById('modal-widget-detail-kasus')); if(m) m.hide(); window.openDetailSantriKasus('${s.key.replace(/'/g, "\\'")}');">
           <td class="text-center fw-bold text-muted">${idx + 1}</td>
           <td>
             <div class="fw-bold text-dark">${s.nama}</div>
@@ -3479,9 +3492,12 @@ document.addEventListener('DOMContentLoaded', () => {
           <td class="text-center"><span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill px-2">${s.mentionCount}</span></td>
           <td class="text-center"><span class="badge bg-warning-subtle text-dark border rounded-pill px-2">${s.alfaCount}</span></td>
           <td class="text-center"><span class="badge bg-danger rounded-pill px-3 py-1 fw-bold">${s.totalMasalah} Masalah</span></td>
-          <td class="text-center">
-            <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3 py-1 fw-semibold btn-modal-select-santri-kasus" data-key="${s.key}">
-              <i class="bi bi-funnel-fill me-1"></i> Filter Santri
+          <td class="text-center text-nowrap" onclick="event.stopPropagation();">
+            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-2 py-1 fw-semibold me-1 btn-modal-jump-santri-detail" data-key="${s.key}">
+              <i class="bi bi-eye me-1"></i> Rincian
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-2 py-1 fw-semibold btn-modal-select-santri-kasus" data-key="${s.key}">
+              <i class="bi bi-funnel-fill me-1"></i> Filter
             </button>
           </td>
         </tr>
@@ -3498,13 +3514,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 <th class="text-center">Catatan KBM</th>
                 <th class="text-center">Alfa</th>
                 <th class="text-center">Total Masalah</th>
-                <th class="text-center">Aksi</th>
+                <th class="text-center" style="width: 140px;">Aksi</th>
               </tr>
             </thead>
             <tbody>${rows}</tbody>
           </table>
         </div>
       `;
+      bodyEl.querySelectorAll('.btn-modal-jump-santri-detail').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const key = e.currentTarget.getAttribute('data-key');
+          const modalEl = document.getElementById('modal-widget-detail-kasus');
+          if (modalEl) bootstrap.Modal.getInstance(modalEl)?.hide();
+          window.openDetailSantriKasus(key);
+        });
+      });
       bodyEl.querySelectorAll('.btn-modal-select-santri-kasus').forEach(btn => {
         btn.addEventListener('click', (e) => {
           const key = e.currentTarget.getAttribute('data-key');
@@ -3531,7 +3555,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
       const rows = list.map((g, idx) => `
-        <tr>
+        <tr class="table-row-clickable" onclick="const m = bootstrap.Modal.getInstance(document.getElementById('modal-widget-detail-kasus')); if(m) m.hide(); window.openDetailGuruPencatat('${g.guru.replace(/'/g, "\\'")}');">
           <td class="text-center fw-bold text-muted">${idx + 1}</td>
           <td>
             <div class="fw-bold text-dark">${g.guru}</div>
@@ -3542,6 +3566,11 @@ document.addEventListener('DOMContentLoaded', () => {
           <td class="text-center"><span class="badge bg-warning-subtle text-dark border rounded-pill px-2 py-1 fw-bold">${g.kendalaKelasCount}</span></td>
           <td class="text-center"><span class="badge bg-secondary-subtle text-secondary border rounded-pill px-2 py-1">${g.alfaDicatatCount}</span></td>
           <td class="text-center"><span class="badge bg-primary rounded-pill px-3 py-1 fw-bold fs-6">${g.totalCatatanMasalah} Catatan</span></td>
+          <td class="text-center text-nowrap" onclick="event.stopPropagation();">
+            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-2 py-1 fw-semibold btn-modal-jump-guru-pencatat" data-guru="${g.guru.replace(/'/g, "\\'")}">
+              <i class="bi bi-journal-text me-1"></i> Rincian
+            </button>
+          </td>
         </tr>
       `).join('');
       bodyEl.innerHTML = `
@@ -3555,13 +3584,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 <th class="text-center">Kasus Santri</th>
                 <th class="text-center">Kendala Kelas</th>
                 <th class="text-center">Alfa Dicatat</th>
-                <th class="text-center">Total Catatan Masalah</th>
+                <th class="text-center">Total Catatan</th>
+                <th class="text-center" style="width: 85px;">Aksi</th>
               </tr>
             </thead>
             <tbody>${rows}</tbody>
           </table>
         </div>
       `;
+      bodyEl.querySelectorAll('.btn-modal-jump-guru-pencatat').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const guru = e.currentTarget.getAttribute('data-guru');
+          const modalEl = document.getElementById('modal-widget-detail-kasus');
+          if (modalEl) bootstrap.Modal.getInstance(modalEl)?.hide();
+          window.openDetailGuruPencatat(guru);
+        });
+      });
       return;
     }
 
@@ -3580,7 +3618,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
       const rows = list.map((g, idx) => `
-        <tr>
+        <tr class="table-row-clickable table-row-clickable-success" onclick="const m = bootstrap.Modal.getInstance(document.getElementById('modal-widget-detail-kasus')); if(m) m.hide(); window.openDetailGuruDisiplin('${g.guru.replace(/'/g, "\\'")}');">
           <td class="text-center fw-bold text-muted">${idx + 1}</td>
           <td>
             <div class="fw-bold text-dark">${g.guru}</div>
@@ -3591,6 +3629,11 @@ document.addEventListener('DOMContentLoaded', () => {
           <td class="text-center"><span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-1 fw-bold">${g.tepatWaktuCount} Sesi (${g.persenTepatWaktu}%)</span></td>
           <td class="text-center">${g.terlambatCount > 0 ? `<span class="badge bg-danger-subtle text-danger border rounded-pill px-2 py-1">${g.terlambatCount}x (~${g.avgLateMins} mnt)</span>` : '<span class="badge bg-light text-success border rounded-pill">0 Telat</span>'}</td>
           <td class="text-center"><span class="badge bg-success rounded-pill px-3 py-1 fw-bold fs-6">${g.skorDisiplin}%</span></td>
+          <td class="text-center text-nowrap" onclick="event.stopPropagation();">
+            <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-2 py-1 fw-semibold btn-modal-jump-guru-disiplin" data-guru="${g.guru.replace(/'/g, "\\'")}">
+              <i class="bi bi-clock-history me-1"></i> Rincian
+            </button>
+          </td>
         </tr>
       `).join('');
       bodyEl.innerHTML = `
@@ -3605,12 +3648,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 <th class="text-center">Tepat Waktu</th>
                 <th class="text-center">Keterlambatan</th>
                 <th class="text-center">Skor Disiplin</th>
+                <th class="text-center" style="width: 85px;">Aksi</th>
               </tr>
             </thead>
             <tbody>${rows}</tbody>
           </table>
         </div>
       `;
+      bodyEl.querySelectorAll('.btn-modal-jump-guru-disiplin').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const guru = e.currentTarget.getAttribute('data-guru');
+          const modalEl = document.getElementById('modal-widget-detail-kasus');
+          if (modalEl) bootstrap.Modal.getInstance(modalEl)?.hide();
+          window.openDetailGuruDisiplin(guru);
+        });
+      });
       return;
     }
 
@@ -3945,6 +3997,679 @@ document.addEventListener('DOMContentLoaded', () => {
       startProgressBar();
     }
   });
+
+  // =========================================================================
+  // DETAIL MODAL: RINCIAN GURU PENCATAT PERMASALAHAN SANTRI & KBM
+  // =========================================================================
+  let currentDetailGuruPencatatData = {
+    guru: '',
+    items: [],
+    activeTab: 'semua',
+    searchQuery: ''
+  };
+
+  window.openDetailGuruPencatat = function(guruName) {
+    if (!guruName) return;
+    const normGuru = guruName.toLowerCase().trim();
+    const gInfo = (currentKasusGuruPencatatList || []).find(g => g.guru.toLowerCase().trim() === normGuru) || {
+      guru: guruName,
+      totalCatatanMasalah: 0,
+      kasusSantriCount: 0,
+      kendalaKelasCount: 0,
+      alfaDicatatCount: 0,
+      mapelSet: new Set(),
+      kelasSet: new Set()
+    };
+
+    // Cari peringkat guru di daftar
+    const rankIdx = (currentKasusGuruPencatatList || []).findIndex(g => g.guru.toLowerCase().trim() === normGuru);
+    const rankTxt = rankIdx >= 0 ? `#${rankIdx + 1} Guru Terbanyak Mencatat` : 'Pencatat Permasalahan';
+
+    // Kumpulkan seluruh item permasalahan yang dicatat guru ini
+    const rawEvents = (currentKasusProcessedData || []).filter(item => {
+      if (!item || !item.guru) return false;
+      return item.guru.toLowerCase().trim() === normGuru;
+    });
+
+    const records = [];
+    rawEvents.forEach(item => {
+      // 1. Catatan Adab Santri
+      (item.santri_catatan || []).forEach(sc => {
+        records.push({
+          tanggal: item.tanggal,
+          hari: item.hari,
+          waktu: item.waktu,
+          kelas: item.kelas,
+          pelajaran: item.pelajaran,
+          materi: item.materi,
+          tipe: 'adab',
+          badgeText: 'Catatan Adab',
+          badgeClass: 'bg-danger',
+          santriNama: sc.nama,
+          santriNis: sc.nis || '-',
+          santriKey: sc.key,
+          keterangan: sc.catatan
+        });
+      });
+
+      // 2. Santri yang disebut di catatan kelas
+      (item.santri_mentioned || []).forEach(sm => {
+        records.push({
+          tanggal: item.tanggal,
+          hari: item.hari,
+          waktu: item.waktu,
+          kelas: item.kelas,
+          pelajaran: item.pelajaran,
+          materi: item.materi,
+          tipe: 'adab',
+          badgeText: 'Disebut di Catatan Kelas',
+          badgeClass: 'bg-info text-dark',
+          santriNama: sm.nama,
+          santriNis: sm.nis || '-',
+          santriKey: sm.key,
+          keterangan: sm.catatan
+        });
+      });
+
+      // 3. Kendala Kelas / KBM
+      if (item.hasCatatanKelas && !item.isKondusif) {
+        records.push({
+          tanggal: item.tanggal,
+          hari: item.hari,
+          waktu: item.waktu,
+          kelas: item.kelas,
+          pelajaran: item.pelajaran,
+          materi: item.materi,
+          tipe: 'kbm',
+          badgeText: 'Kendala Kelas / KBM',
+          badgeClass: 'bg-warning text-dark',
+          santriNama: '-',
+          santriNis: '-',
+          santriKey: '',
+          keterangan: item.catatan_kelas
+        });
+      }
+
+      // 4. Santri Alfa
+      (item.santri_alfa || []).forEach(sa => {
+        records.push({
+          tanggal: item.tanggal,
+          hari: item.hari,
+          waktu: item.waktu,
+          kelas: item.kelas,
+          pelajaran: item.pelajaran,
+          materi: item.materi,
+          tipe: 'alfa',
+          badgeText: 'Alfa / Mangkir',
+          badgeClass: 'bg-secondary',
+          santriNama: sa.nama,
+          santriNis: sa.nis || '-',
+          santriKey: sa.key,
+          keterangan: 'Tidak hadir tanpa keterangan (Alfa)'
+        });
+      });
+    });
+
+    records.sort((a, b) => {
+      const dtA = String(a.tanggal) + ' ' + String(a.waktu);
+      const dtB = String(b.tanggal) + ' ' + String(b.waktu);
+      return dtB.localeCompare(dtA);
+    });
+
+    currentDetailGuruPencatatData = {
+      guru: gInfo.guru,
+      items: records,
+      activeTab: 'semua',
+      searchQuery: ''
+    };
+
+    // Isi header & summary info
+    const elNama = document.getElementById('modal-guru-pencatat-nama');
+    const elRank = document.getElementById('modal-guru-pencatat-rank');
+    const elSub = document.getElementById('modal-guru-pencatat-sub');
+    const elStatTotal = document.getElementById('modal-guru-pencatat-stat-total');
+    const elStatAdab = document.getElementById('modal-guru-pencatat-stat-adab');
+    const elStatKelas = document.getElementById('modal-guru-pencatat-stat-kelas');
+    const elStatAlfa = document.getElementById('modal-guru-pencatat-stat-alfa');
+    const inpSearch = document.getElementById('modal-guru-pencatat-search');
+
+    if (elNama) elNama.innerText = gInfo.guru;
+    if (elRank) elRank.innerText = rankTxt;
+    if (elSub) {
+      const mapelStr = Array.from(gInfo.mapelSet || []).join(', ') || '-';
+      const kelasStr = Array.from(gInfo.kelasSet || []).sort().join(', ') || '-';
+      elSub.innerText = `Mapel: ${mapelStr} | Kelas Terkait: ${kelasStr} (${gInfo.totalJurnalIsi || 0} Jurnal Diisi)`;
+    }
+
+    const countAdab = records.filter(r => r.tipe === 'adab').length;
+    const countKbm = records.filter(r => r.tipe === 'kbm').length;
+    const countAlfa = records.filter(r => r.tipe === 'alfa').length;
+
+    if (elStatTotal) elStatTotal.innerText = records.length;
+    if (elStatAdab) elStatAdab.innerText = countAdab;
+    if (elStatKelas) elStatKelas.innerText = countKbm;
+    if (elStatAlfa) elStatAlfa.innerText = countAlfa;
+
+    const elCountSemua = document.getElementById('count-tab-pencatat-semua');
+    const elCountAdabTab = document.getElementById('count-tab-pencatat-adab');
+    const elCountKbmTab = document.getElementById('count-tab-pencatat-kbm');
+    const elCountAlfaTab = document.getElementById('count-tab-pencatat-alfa');
+
+    if (elCountSemua) elCountSemua.innerText = records.length;
+    if (elCountAdabTab) elCountAdabTab.innerText = countAdab;
+    if (elCountKbmTab) elCountKbmTab.innerText = countKbm;
+    if (elCountAlfaTab) elCountAlfaTab.innerText = countAlfa;
+
+    if (inpSearch) inpSearch.value = '';
+
+    // Reset tabs
+    document.querySelectorAll('.btn-tab-modal-guru-pencatat').forEach(btn => {
+      btn.classList.toggle('btn-primary', btn.getAttribute('data-tab') === 'semua');
+      btn.classList.toggle('btn-light', btn.getAttribute('data-tab') !== 'semua');
+      btn.classList.toggle('active', btn.getAttribute('data-tab') === 'semua');
+    });
+
+    renderDetailGuruPencatatBody();
+
+    const modalEl = document.getElementById('modal-detail-guru-pencatat');
+    if (modalEl) bootstrap.Modal.getOrCreateInstance(modalEl).show();
+  };
+
+  function renderDetailGuruPencatatBody() {
+    const bodyEl = document.getElementById('modal-guru-pencatat-body');
+    if (!bodyEl) return;
+
+    const { items, activeTab, searchQuery } = currentDetailGuruPencatatData;
+    let filtered = [...items];
+
+    if (activeTab !== 'semua') {
+      filtered = filtered.filter(r => r.tipe === activeTab);
+    }
+
+    if (searchQuery) {
+      filtered = filtered.filter(r => {
+        const text = (r.keterangan + ' ' + r.santriNama + ' ' + r.santriNis + ' ' + r.kelas + ' ' + r.pelajaran + ' ' + (r.materi || '')).toLowerCase();
+        return text.includes(searchQuery);
+      });
+    }
+
+    if (filtered.length === 0) {
+      bodyEl.innerHTML = `
+        <div class="text-center py-5 text-muted">
+          <i class="bi bi-inbox fs-1 text-secondary opacity-50 d-block mb-2"></i>
+          Tidak ada catatan permasalahan yang cocok dengan filter atau pencarian ini.
+        </div>
+      `;
+      return;
+    }
+
+    const rows = filtered.map((r, idx) => `
+      <tr>
+        <td class="text-center text-muted fw-semibold" style="width: 45px;">${idx + 1}</td>
+        <td class="text-nowrap small" style="width: 140px;">
+          <div class="fw-bold text-dark">${r.hari || '-'}, ${formatDateIndo(r.tanggal)}</div>
+          <span class="text-muted" style="font-size: 11px;"><i class="bi bi-clock me-1"></i>Pukul ${r.waktu || '-'}</span>
+        </td>
+        <td class="text-center" style="width: 80px;">
+          <span class="badge bg-primary rounded-pill px-2 py-1">Kelas ${r.kelas}</span>
+        </td>
+        <td style="width: 160px;">
+          <div class="fw-semibold text-dark small">${r.pelajaran}</div>
+          ${r.materi ? `<div class="text-muted fst-italic" style="font-size: 11px;">Materi: ${r.materi}</div>` : ''}
+        </td>
+        <td class="text-center" style="width: 130px;">
+          <span class="badge ${r.badgeClass} rounded-pill px-2 py-1 small">${r.badgeText}</span>
+        </td>
+        <td style="width: 160px;">
+          ${r.santriNama && r.santriNama !== '-' ? `
+            <div class="fw-bold text-dark">${r.santriNama}</div>
+            ${r.santriNis && r.santriNis !== '-' ? `<small class="text-muted font-monospace" style="font-size: 11px;">NIS: ${r.santriNis}</small>` : ''}
+          ` : '<span class="text-muted small">Kendala Seluruh Kelas</span>'}
+        </td>
+        <td class="small">
+          <div class="p-2 rounded bg-light border text-dark fw-medium">${r.keterangan}</div>
+        </td>
+        <td class="text-center text-nowrap" style="width: 80px;">
+          ${r.santriKey ? `
+            <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-2 py-1 small fw-semibold" onclick="const m = bootstrap.Modal.getInstance(document.getElementById('modal-detail-guru-pencatat')); if(m) m.hide(); window.selectSantriKasusFilter('${r.santriKey.replace(/'/g, "\\'")}');" title="Filter Santri Ini di Halaman Utama">
+              <i class="bi bi-funnel-fill me-1"></i> Filter
+            </button>
+          ` : '<span class="text-muted small">-</span>'}
+        </td>
+      </tr>
+    `).join('');
+
+    bodyEl.innerHTML = `
+      <div class="table-responsive" style="max-height: 480px;">
+        <table class="table table-sm table-hover align-middle mb-0">
+          <thead class="table-light text-muted small position-sticky top-0 shadow-sm">
+            <tr>
+              <th class="text-center">#</th>
+              <th>Tanggal & Waktu</th>
+              <th class="text-center">Kelas</th>
+              <th>Pelajaran & Materi</th>
+              <th class="text-center">Kategori</th>
+              <th>Santri Terlibat</th>
+              <th>Deskripsi Catatan Guru</th>
+              <th class="text-center">Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  // Bind controls modal guru pencatat
+  document.querySelectorAll('.btn-tab-modal-guru-pencatat').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      document.querySelectorAll('.btn-tab-modal-guru-pencatat').forEach(b => {
+        b.classList.remove('btn-primary', 'active');
+        b.classList.add('btn-light');
+      });
+      const t = e.currentTarget;
+      t.classList.remove('btn-light');
+      t.classList.add('btn-primary', 'active');
+      currentDetailGuruPencatatData.activeTab = t.getAttribute('data-tab') || 'semua';
+      renderDetailGuruPencatatBody();
+    });
+  });
+
+  const inpSearchPencatat = document.getElementById('modal-guru-pencatat-search');
+  if (inpSearchPencatat) {
+    inpSearchPencatat.addEventListener('input', (e) => {
+      currentDetailGuruPencatatData.searchQuery = e.target.value.toLowerCase().trim();
+      renderDetailGuruPencatatBody();
+    });
+  }
+
+  // =========================================================================
+  // DETAIL MODAL: RINCIAN GURU DISIPLIN PRESENSI KBM
+  // =========================================================================
+  let currentDetailGuruDisiplinData = {
+    guru: '',
+    items: [],
+    activeTab: 'semua',
+    searchQuery: ''
+  };
+
+  window.openDetailGuruDisiplin = function(guruName) {
+    if (!guruName) return;
+    const normGuru = guruName.toLowerCase().trim();
+    const gInfo = (currentKasusGuruDisiplinList || []).find(g => g.guru.toLowerCase().trim() === normGuru) || {
+      guru: guruName,
+      totalJadwal: 0,
+      hadirCount: 0,
+      jurnalIsiCount: 0,
+      tepatWaktuCount: 0,
+      terlambatCount: 0,
+      skorDisiplin: 0,
+      persenHadir: 0,
+      persenTepatWaktu: 0,
+      persenJurnal: 0,
+      mapelSet: new Set(),
+      kelasSet: new Set()
+    };
+
+    const rankIdx = (currentKasusGuruDisiplinList || []).findIndex(g => g.guru.toLowerCase().trim() === normGuru);
+    const rankTxt = rankIdx >= 0 ? `#${rankIdx + 1} Guru Paling Disiplin` : 'Kedisiplinan Presensi';
+
+    // Kumpulkan seluruh sesi mengajar guru ini dari raw data
+    const rawSessions = (currentRawLogData || []).filter(item => {
+      if (!item || !item.guru) return false;
+      return item.guru.toLowerCase().trim() === normGuru;
+    });
+
+    const records = rawSessions.map(item => {
+      const isHadir = Boolean(item.status_isi || item.status_guru === 'Hadir');
+      const lateMins = Number(item.late_mins || 0);
+      const isTepat = isHadir && lateMins <= 0;
+      const isTelat = isHadir && lateMins > 0;
+      const isTerisi = Boolean(item.status_isi);
+
+      return {
+        id_jurnal: item.id_jurnal || item.id_jadwal,
+        tanggal: item.tanggal,
+        hari: item.hari,
+        waktu: item.waktu || '-',
+        jam_ke: item.jam_ke || '-',
+        kelas: item.kelas || '-',
+        pelajaran: item.pelajaran || '-',
+        materi: item.materi || '',
+        catatan_kelas: item.catatan_kelas || '',
+        status_isi: isTerisi,
+        status_guru: item.status_guru || (isTerisi ? 'Hadir' : 'Belum mengisi'),
+        late_mins: lateMins,
+        over_mins: Number(item.over_mins || 0),
+        hadirSantri: Number(item.hadir || 0),
+        izinSantri: Number(item.izin || 0),
+        sakitSantri: Number(item.sakit || 0),
+        alfaSantri: Number(item.alfa || 0),
+        isHadir,
+        isTepat,
+        isTelat,
+        isTerisi,
+        isBelum: !isTerisi
+      };
+    });
+
+    records.sort((a, b) => {
+      const dtA = String(a.tanggal) + ' ' + String(a.waktu);
+      const dtB = String(b.tanggal) + ' ' + String(b.waktu);
+      return dtB.localeCompare(dtA);
+    });
+
+    currentDetailGuruDisiplinData = {
+      guru: gInfo.guru,
+      items: records,
+      activeTab: 'semua',
+      searchQuery: ''
+    };
+
+    // Header info
+    const elNama = document.getElementById('modal-guru-disiplin-nama');
+    const elRank = document.getElementById('modal-guru-disiplin-rank');
+    const elScore = document.getElementById('modal-guru-disiplin-score');
+    const elSub = document.getElementById('modal-guru-disiplin-sub');
+    const elStatJadwal = document.getElementById('modal-guru-disiplin-stat-jadwal');
+    const elStatHadir = document.getElementById('modal-guru-disiplin-stat-hadir');
+    const elStatTepat = document.getElementById('modal-guru-disiplin-stat-tepat');
+    const elStatTelat = document.getElementById('modal-guru-disiplin-stat-telat');
+    const elStatJurnal = document.getElementById('modal-guru-disiplin-stat-jurnal');
+    const elStatSkor = document.getElementById('modal-guru-disiplin-stat-skor');
+    const inpSearch = document.getElementById('modal-guru-disiplin-search');
+
+    if (elNama) elNama.innerText = gInfo.guru;
+    if (elRank) elRank.innerText = rankTxt;
+    if (elScore) elScore.innerText = `Skor: ${gInfo.skorDisiplin}%`;
+    if (elSub) {
+      const mapelStr = Array.from(gInfo.mapelSet || []).join(', ') || '-';
+      const kelasStr = Array.from(gInfo.kelasSet || []).sort().join(', ') || '-';
+      elSub.innerText = `Mapel: ${mapelStr} | Kelas Diampu: ${kelasStr} (${records.length} Total Sesi Mengajar)`;
+    }
+
+    const countHadir = records.filter(r => r.isHadir).length;
+    const countTepat = records.filter(r => r.isTepat).length;
+    const countTelat = records.filter(r => r.isTelat).length;
+    const countTerisi = records.filter(r => r.isTerisi).length;
+    const countBelum = records.filter(r => r.isBelum).length;
+
+    if (elStatJadwal) elStatJadwal.innerText = records.length;
+    if (elStatHadir) elStatHadir.innerText = `${countHadir} (${gInfo.persenHadir}%)`;
+    if (elStatTepat) elStatTepat.innerText = `${countTepat} (${gInfo.persenTepatWaktu}%)`;
+    if (elStatTelat) elStatTelat.innerText = `${countTelat}x (~${gInfo.avgLateMins || 0}m)`;
+    if (elStatJurnal) elStatJurnal.innerText = `${countTerisi} (${gInfo.persenJurnal}%)`;
+    if (elStatSkor) elStatSkor.innerText = `${gInfo.skorDisiplin}%`;
+
+    const elCountSemua = document.getElementById('count-tab-disiplin-semua');
+    const elCountTepat = document.getElementById('count-tab-disiplin-tepat');
+    const elCountTelat = document.getElementById('count-tab-disiplin-telat');
+    const elCountTerisi = document.getElementById('count-tab-disiplin-terisi');
+    const elCountBelum = document.getElementById('count-tab-disiplin-belum');
+
+    if (elCountSemua) elCountSemua.innerText = records.length;
+    if (elCountTepat) elCountTepat.innerText = countTepat;
+    if (elCountTelat) elCountTelat.innerText = countTelat;
+    if (elCountTerisi) elCountTerisi.innerText = countTerisi;
+    if (elCountBelum) elCountBelum.innerText = countBelum;
+
+    if (inpSearch) inpSearch.value = '';
+
+    // Reset tabs
+    document.querySelectorAll('.btn-tab-modal-guru-disiplin').forEach(btn => {
+      btn.classList.toggle('btn-success', btn.getAttribute('data-tab') === 'semua');
+      btn.classList.toggle('btn-light', btn.getAttribute('data-tab') !== 'semua');
+      btn.classList.toggle('active', btn.getAttribute('data-tab') === 'semua');
+    });
+
+    renderDetailGuruDisiplinBody();
+
+    const modalEl = document.getElementById('modal-detail-guru-disiplin');
+    if (modalEl) bootstrap.Modal.getOrCreateInstance(modalEl).show();
+  };
+
+  function renderDetailGuruDisiplinBody() {
+    const bodyEl = document.getElementById('modal-guru-disiplin-body');
+    if (!bodyEl) return;
+
+    const { items, activeTab, searchQuery } = currentDetailGuruDisiplinData;
+    let filtered = [...items];
+
+    if (activeTab === 'tepat') {
+      filtered = filtered.filter(r => r.isTepat);
+    } else if (activeTab === 'telat') {
+      filtered = filtered.filter(r => r.isTelat);
+    } else if (activeTab === 'terisi') {
+      filtered = filtered.filter(r => r.isTerisi);
+    } else if (activeTab === 'belum') {
+      filtered = filtered.filter(r => r.isBelum);
+    }
+
+    if (searchQuery) {
+      filtered = filtered.filter(r => {
+        const text = (r.pelajaran + ' ' + r.kelas + ' ' + (r.materi || '') + ' ' + (r.catatan_kelas || '') + ' ' + r.status_guru).toLowerCase();
+        return text.includes(searchQuery);
+      });
+    }
+
+    if (filtered.length === 0) {
+      bodyEl.innerHTML = `
+        <div class="text-center py-5 text-muted">
+          <i class="bi bi-inbox fs-1 text-secondary opacity-50 d-block mb-2"></i>
+          Tidak ada sesi mengajar yang cocok dengan filter atau pencarian ini.
+        </div>
+      `;
+      return;
+    }
+
+    const rows = filtered.map((r, idx) => {
+      let badgeMasuk = '';
+      if (r.isHadir) {
+        if (r.late_mins > 0) {
+          badgeMasuk = `<span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2 py-1"><i class="bi bi-alarm me-1"></i>Telat ${r.late_mins} mnt</span>`;
+        } else {
+          badgeMasuk = `<span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-1"><i class="bi bi-check2-circle me-1"></i>Tepat Waktu</span>`;
+        }
+      } else {
+        badgeMasuk = `<span class="badge bg-secondary-subtle text-secondary border rounded-pill px-2 py-1">Tidak Hadir</span>`;
+      }
+
+      let badgeJurnal = '';
+      if (r.isTerisi) {
+        badgeJurnal = `<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Jurnal Terisi</span>`;
+      } else {
+        badgeJurnal = `<span class="badge bg-secondary text-light"><i class="bi bi-dash-circle me-1"></i>Belum Mengisi</span>`;
+      }
+
+      return `
+        <tr>
+          <td class="text-center text-muted fw-semibold" style="width: 45px;">${idx + 1}</td>
+          <td class="text-nowrap small" style="width: 140px;">
+            <div class="fw-bold text-dark">${r.hari || '-'}, ${formatDateIndo(r.tanggal)}</div>
+            <span class="text-muted" style="font-size: 11px;">Jadwal: ${r.waktu || '-'}</span>
+          </td>
+          <td class="text-center" style="width: 80px;">
+            <span class="badge bg-primary rounded-pill px-2 py-1">Kelas ${r.kelas}</span>
+          </td>
+          <td style="width: 170px;">
+            <div class="fw-semibold text-dark small">${r.pelajaran}</div>
+            ${badgeJurnal}
+          </td>
+          <td class="text-center" style="width: 130px;">
+            <div class="fw-medium font-monospace small">${r.waktu || '-'}</div>
+            ${badgeMasuk}
+          </td>
+          <td class="text-center" style="width: 100px;">
+            <span class="font-monospace small">${r.jam_ke || '-'}</span>
+          </td>
+          <td class="text-center small" style="width: 130px;">
+            ${r.isTerisi ? `
+              <span class="badge bg-success-subtle text-success border px-1" title="Hadir">${r.hadirSantri}H</span>
+              <span class="badge bg-warning-subtle text-dark border px-1" title="Izin">${r.izinSantri}I</span>
+              <span class="badge bg-info-subtle text-dark border px-1" title="Sakit">${r.sakitSantri}S</span>
+              <span class="badge bg-danger-subtle text-danger border px-1" title="Alfa">${r.alfaSantri}A</span>
+            ` : '<span class="text-muted">-</span>'}
+          </td>
+          <td class="small">
+            ${r.materi ? `<div class="fw-medium text-dark">${r.materi}</div>` : ''}
+            ${r.catatan_kelas ? `<div class="text-muted fst-italic" style="font-size: 11px;">Catatan: ${r.catatan_kelas}</div>` : (!r.materi ? '<span class="text-muted">-</span>' : '')}
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    bodyEl.innerHTML = `
+      <div class="table-responsive" style="max-height: 480px;">
+        <table class="table table-sm table-hover align-middle mb-0">
+          <thead class="table-light text-muted small position-sticky top-0 shadow-sm">
+            <tr>
+              <th class="text-center">#</th>
+              <th>Tanggal & Waktu</th>
+              <th class="text-center">Kelas</th>
+              <th>Pelajaran & Status</th>
+              <th class="text-center">Jam Masuk / Ketepatan</th>
+              <th class="text-center">Jam Keluar</th>
+              <th class="text-center">Presensi Santri</th>
+              <th>Materi & Catatan Jurnal</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  // Bind controls modal guru disiplin
+  document.querySelectorAll('.btn-tab-modal-guru-disiplin').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      document.querySelectorAll('.btn-tab-modal-guru-disiplin').forEach(b => {
+        b.classList.remove('btn-success', 'active');
+        b.classList.add('btn-light');
+      });
+      const t = e.currentTarget;
+      t.classList.remove('btn-light');
+      t.classList.add('btn-success', 'active');
+      currentDetailGuruDisiplinData.activeTab = t.getAttribute('data-tab') || 'semua';
+      renderDetailGuruDisiplinBody();
+    });
+  });
+
+  const inpSearchDisiplin = document.getElementById('modal-guru-disiplin-search');
+  if (inpSearchDisiplin) {
+    inpSearchDisiplin.addEventListener('input', (e) => {
+      currentDetailGuruDisiplinData.searchQuery = e.target.value.toLowerCase().trim();
+      renderDetailGuruDisiplinBody();
+    });
+  }
+
+  // =========================================================================
+  // DETAIL MODAL: RINCIAN MASALAH PER SANTRI
+  // =========================================================================
+  window.openDetailSantriKasus = function(santriKey) {
+    if (!santriKey) return;
+    let sInfo = (currentKasusSantriRekapList || []).find(s => s.key === santriKey);
+    if (!sInfo) {
+      const fromMaster = (allSantri || []).find(s => getSantriKeyKasus(s, s.kelas) === santriKey);
+      sInfo = {
+        key: santriKey,
+        nama: fromMaster ? fromMaster.nama : santriKey,
+        nis: fromMaster ? fromMaster.nis || '-' : '-',
+        kelas: fromMaster ? fromMaster.kelas || '-' : '-',
+        totalMasalah: 0,
+        adabCount: 0,
+        mentionCount: 0,
+        alfaCount: 0,
+        records: []
+      };
+    }
+
+    const elNama = document.getElementById('modal-santri-kasus-nama');
+    const elKelas = document.getElementById('modal-santri-kasus-kelas');
+    const elNis = document.getElementById('modal-santri-kasus-nis');
+    const elStatTotal = document.getElementById('modal-santri-kasus-stat-total');
+    const elStatAdab = document.getElementById('modal-santri-kasus-stat-adab');
+    const elStatKbm = document.getElementById('modal-santri-kasus-stat-kbm');
+    const elStatAlfa = document.getElementById('modal-santri-kasus-stat-alfa');
+    const bodyEl = document.getElementById('modal-santri-kasus-body');
+    const btnFilterMain = document.getElementById('btn-modal-santri-filter-main');
+
+    if (elNama) elNama.innerText = sInfo.nama;
+    if (elKelas) elKelas.innerText = `Kelas ${sInfo.kelas}`;
+    if (elNis) elNis.innerText = sInfo.nis && sInfo.nis !== '-' ? `NIS: ${sInfo.nis}` : 'NIS: -';
+    if (elStatTotal) elStatTotal.innerText = sInfo.totalMasalah;
+    if (elStatAdab) elStatAdab.innerText = sInfo.adabCount;
+    if (elStatKbm) elStatKbm.innerText = sInfo.mentionCount;
+    if (elStatAlfa) elStatAlfa.innerText = sInfo.alfaCount;
+
+    if (btnFilterMain) {
+      btnFilterMain.onclick = function() {
+        const modalEl = document.getElementById('modal-detail-santri-kasus');
+        if (modalEl) bootstrap.Modal.getInstance(modalEl)?.hide();
+        window.selectSantriKasusFilter(santriKey);
+      };
+    }
+
+    if (bodyEl) {
+      if (!sInfo.records || sInfo.records.length === 0) {
+        bodyEl.innerHTML = `
+          <div class="text-center py-5 text-muted">
+            <i class="bi bi-shield-check display-4 text-success opacity-50 d-block mb-2"></i>
+            Santri ini tidak memiliki catatan permasalahan pada periode aktif.
+          </div>
+        `;
+      } else {
+        const rows = sInfo.records.map((r, idx) => `
+          <tr>
+            <td class="text-center text-muted fw-semibold" style="width: 45px;">${idx + 1}</td>
+            <td class="text-nowrap small" style="width: 140px;">
+              <div class="fw-bold text-dark">${r.hari || '-'}, ${formatDateIndo(r.tanggal)}</div>
+              <span class="text-muted" style="font-size: 11px;">Pukul ${r.waktu || '-'}</span>
+            </td>
+            <td class="text-center" style="width: 80px;">
+              <span class="badge bg-primary rounded-pill px-2 py-1">${r.kelas}</span>
+            </td>
+            <td style="width: 170px;">
+              <div class="fw-semibold text-dark small">${r.pelajaran}</div>
+              <small class="text-muted">Guru: ${r.guru}</small>
+            </td>
+            <td class="text-center" style="width: 130px;">
+              <span class="badge ${r.badgeClass} rounded-pill px-2 py-1 small">${r.kategori}</span>
+            </td>
+            <td class="small">
+              <div class="p-2 rounded bg-light border text-danger fw-semibold">${r.keterangan}</div>
+            </td>
+          </tr>
+        `).join('');
+
+        bodyEl.innerHTML = `
+          <div class="table-responsive" style="max-height: 440px;">
+            <table class="table table-sm table-hover align-middle mb-0">
+              <thead class="table-light text-muted small position-sticky top-0 shadow-sm">
+                <tr>
+                  <th class="text-center">#</th>
+                  <th>Tanggal & Waktu</th>
+                  <th class="text-center">Kelas</th>
+                  <th>Pelajaran & Guru</th>
+                  <th class="text-center">Kategori</th>
+                  <th>Deskripsi / Catatan Masalah</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rows}
+              </tbody>
+            </table>
+          </div>
+        `;
+      }
+    }
+
+    const modalEl = document.getElementById('modal-detail-santri-kasus');
+    if (modalEl) bootstrap.Modal.getOrCreateInstance(modalEl).show();
+  };
 
   function updateMapel() {
     const selectedGuru = selGuru.value;

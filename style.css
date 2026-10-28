@@ -475,3 +475,27 @@ body {
   color: #f8fafc;
   border-color: #0f172a;
 }
+
+/* --- Table Row Clickable with Hover Effect --- */
+.table-row-clickable {
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.1s ease;
+}
+.table-row-clickable:hover {
+  background-color: rgba(79, 70, 229, 0.07) !important;
+}
+.table-row-clickable:active {
+  background-color: rgba(79, 70, 229, 0.14) !important;
+}
+.table-row-clickable-success:hover {
+  background-color: rgba(16, 185, 129, 0.08) !important;
+}
+.table-row-clickable-success:active {
+  background-color: rgba(16, 185, 129, 0.15) !important;
+}
+.table-row-clickable-danger:hover {
+  background-color: rgba(239, 68, 68, 0.08) !important;
+}
+.table-row-clickable-danger:active {
+  background-color: rgba(239, 68, 68, 0.15) !important;
+}
