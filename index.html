@@ -44,6 +44,72 @@
 </head>
 <body class="bg-light-subtle">
 
+  <!-- Smart Version Gateway & Redirection (Hanya aktif jika dibuka di domain lama: github.io) -->
+  <div id="version-redirect-gateway" style="display: none; position: fixed; inset: 0; z-index: 999999; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); align-items: center; justify-content: center; padding: 20px;">
+    <div style="background: #ffffff; border-radius: 24px; max-width: 520px; width: 100%; padding: 32px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4); text-align: center; border: 1px solid rgba(226, 232, 240, 0.8); font-family: 'Inter', -apple-system, sans-serif;">
+      <div style="width: 72px; height: 72px; margin: 0 auto 20px; background: linear-gradient(135deg, #ecfdf5, #d1fae5); border-radius: 20px; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.2);">
+        <i class="bi bi-rocket-takeoff text-success" style="font-size: 36px;"></i>
+      </div>
+      <h3 style="font-weight: 800; color: #0f172a; margin-bottom: 8px; font-size: 22px;">Aplikasi Telah Bermigrasi!</h3>
+      <p style="color: #64748b; font-size: 14px; line-height: 1.6; margin-bottom: 24px;">
+        Presensi KBM kini telah berpindah ke server baru <strong>Firebase Cloud</strong> berkecepatan tinggi (&lt; 100ms), hemat kuota, dan tersinkronisasi real-time.
+      </p>
+
+      <!-- Timer Auto-Redirect -->
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 12px 16px; margin-bottom: 24px; display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 13px; color: #334155;">
+        <div class="spinner-border spinner-border-sm text-success" role="status" style="width: 16px; height: 16px; border-width: 2px;"></div>
+        <span>Mengarahkan otomatis dalam <strong id="redirect-countdown" style="color: #059669; font-size: 16px;">5</strong> detik...</span>
+      </div>
+
+      <!-- Action Buttons -->
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        <a id="btn-goto-new" href="https://maisya-kbm.web.app/" style="background: linear-gradient(135deg, #10b981, #059669); color: #ffffff; text-decoration: none; padding: 14px 20px; border-radius: 14px; font-weight: 700; font-size: 15px; box-shadow: 0 10px 20px -5px rgba(16, 185, 129, 0.4); display: flex; align-items: center; justify-content: center; gap: 8px;">
+          <i class="bi bi-lightning-charge-fill"></i> Buka Versi Baru (Direkomendasikan)
+        </a>
+        <button id="btn-stay-old" type="button" style="background: transparent; color: #64748b; border: 1px solid #cbd5e1; padding: 12px 20px; border-radius: 14px; font-weight: 600; font-size: 14px; cursor: pointer;">
+          Tetap di Versi Ini (Lama)
+        </button>
+      </div>
+    </div>
+  </div>
+  <script>
+    (function() {
+      if (window.location.hostname.includes('github.io')) {
+        var urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('stay') === 'true') return;
+
+        window.addEventListener('DOMContentLoaded', function() {
+          var gateway = document.getElementById('version-redirect-gateway');
+          var countEl = document.getElementById('redirect-countdown');
+          var btnNew = document.getElementById('btn-goto-new');
+          var btnStay = document.getElementById('btn-stay-old');
+          if (!gateway) return;
+
+          gateway.style.display = 'flex';
+          var targetUrl = 'https://maisya-kbm.web.app/' + window.location.search + window.location.hash;
+          if (btnNew) btnNew.href = targetUrl;
+
+          var seconds = 5;
+          var timer = setInterval(function() {
+            seconds--;
+            if (countEl) countEl.innerText = seconds;
+            if (seconds <= 0) {
+              clearInterval(timer);
+              window.location.replace(targetUrl);
+            }
+          }, 1000);
+
+          if (btnStay) {
+            btnStay.addEventListener('click', function() {
+              clearInterval(timer);
+              gateway.style.display = 'none';
+            });
+          }
+        });
+      }
+    })();
+  </script>
+
   <!-- Floating Non-Blocking Loading Indicator -->
   <div id="global-loading" class="global-loading d-none">
     <div class="loading-pill shadow">
@@ -1830,12 +1896,12 @@
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  <script src="kbm-firebase-adapter.js?v=35"></script>
-  <script src="app.js?v=35"></script>
+  <script src="kbm-firebase-adapter.js?v=36"></script>
+  <script src="app.js?v=36"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function() {
-        navigator.serviceWorker.register('./sw.js?v=35').then(function(registration) {
+        navigator.serviceWorker.register('./sw.js?v=36').then(function(registration) {
           console.log('ServiceWorker registration successful with scope: ', registration.scope);
           registration.update();
         }, function(err) {
